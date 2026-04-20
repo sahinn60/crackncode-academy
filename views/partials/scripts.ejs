@@ -1,0 +1,119 @@
+<script>
+  (function () {
+    var root = document.documentElement;
+    var btn = document.getElementById("themeToggle");
+    var moon = document.getElementById("iconMoon");
+    var sun = document.getElementById("iconSun");
+    // Sync icon with saved theme
+    if (document.documentElement.classList.contains('light')) {
+      if (moon) moon.classList.add('hidden');
+      if (sun) sun.classList.remove('hidden');
+    }
+    if (btn) {
+      btn.addEventListener("click", function () {
+        var isLight = document.documentElement.classList.toggle("light");
+        localStorage.setItem('cnc_theme', isLight ? 'light' : 'dark');
+        if (moon && sun) {
+          moon.classList.toggle("hidden", isLight);
+          sun.classList.toggle("hidden", !isLight);
+        }
+      });
+    }
+    var toTop = document.getElementById("toTop");
+    window.addEventListener("scroll", function () {
+      if (!toTop) return;
+      if (window.scrollY > 400) {
+        toTop.classList.remove("opacity-0", "pointer-events-none");
+      } else {
+        toTop.classList.add("opacity-0", "pointer-events-none");
+      }
+    });
+    if (toTop) {
+      toTop.addEventListener("click", function () {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    }
+  })();
+</script>
+
+<!-- WhatsApp Floating Button -->
+<a href="https://wa.me/8801516563876" target="_blank" rel="noopener noreferrer"
+  title="WhatsApp এ Message করুন"
+  class="fixed bottom-24 right-6 z-50 flex h-14 w-14 items-center justify-center rounded-full bg-[#25D366] shadow-lg shadow-[#25D366]/40 transition hover:scale-110 hover:shadow-xl">
+  <svg class="h-7 w-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+    <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+  </svg>
+</a>
+
+<script>
+  (function () {
+    function updateCartBadge(count) {
+      var badge = document.getElementById("cartBadge");
+      if (!badge) return;
+      var n = Number(count || 0);
+      if (n > 0) {
+        badge.textContent = String(n);
+        badge.classList.remove("hidden");
+        badge.classList.add("flex");
+      } else {
+        badge.textContent = "";
+        badge.classList.add("hidden");
+        badge.classList.remove("flex");
+      }
+    }
+
+    // Initialize badge from server-rendered locals (if any)
+    try {
+      var initial = <%- typeof cartCount !== 'undefined' ? JSON.stringify(cartCount) : "0" %>;
+      updateCartBadge(initial);
+    } catch (_e) {}
+
+    // AJAX add-to-cart: prevent page jump to top
+    document.addEventListener("submit", async function (e) {
+      var form = e.target;
+      if (!form || form.tagName !== "FORM") return;
+      if (!form.hasAttribute("data-ajax-cart")) return;
+
+      e.preventDefault();
+      var btn = form.querySelector('button[type="submit"]');
+      var oldText = btn ? btn.textContent : "";
+      if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = "0.75";
+      }
+
+      try {
+        var fd = new FormData(form);
+        // Tell server to return JSON, not a redirect
+        fd.append("ajax", "1");
+        var res = await fetch(form.action, {
+          method: "POST",
+          body: new URLSearchParams(fd),
+          headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+        });
+        if (!res.ok) throw new Error("Add to cart failed");
+
+        var data = await res.json();
+        if (data && typeof data.count !== "undefined") updateCartBadge(data.count);
+        else {
+          // fallback refresh count
+          var cRes = await fetch("/cart/count");
+          if (cRes.ok) {
+            var cData = await cRes.json();
+            updateCartBadge(cData.count);
+          }
+        }
+      } catch (_err) {
+        // fallback to normal submit if fetch fails
+        form.removeAttribute("data-ajax-cart");
+        form.submit();
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.style.opacity = "";
+          btn.textContent = oldText;
+        }
+      }
+    });
+  })();
+</script>

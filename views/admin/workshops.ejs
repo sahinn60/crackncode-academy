@@ -1,0 +1,107 @@
+<%
+var body = `
+<div class="mb-5 flex items-center justify-between">
+  <p class="text-sm text-slate-400">${items.length} workshops</p>
+  <button onclick="document.getElementById('addModal').classList.remove('hidden')"
+    class="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-sm font-semibold text-white">+ Add Workshop</button>
+</div>
+
+<div class="rounded-2xl border border-white/10 bg-[#0a1428] overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead><tr class="border-b border-white/10 text-xs text-slate-500">
+        <th class="px-5 py-3 text-left">Workshop</th>
+        <th class="px-5 py-3 text-left">Category</th>
+        <th class="px-5 py-3 text-left">Type</th>
+        <th class="px-5 py-3 text-left">Price</th>
+        <th class="px-5 py-3 text-left">Status</th>
+        <th class="px-5 py-3 text-left">Actions</th>
+      </tr></thead>
+      <tbody>
+        ${items.map(i => `
+        <tr class="border-b border-white/5 hover:bg-white/5" id="row-${i.id}">
+          <td class="px-5 py-3">
+            <p class="font-medium text-white">${i.title}</p>
+            <p class="text-xs text-slate-500">${i.slug}</p>
+          </td>
+          <td class="px-5 py-3 text-slate-400">${i.category||'—'}</td>
+          <td class="px-5 py-3 text-slate-400">${i.wType||'—'}</td>
+          <td class="px-5 py-3 text-white">৳ ${i.price.toLocaleString()}</td>
+          <td class="px-5 py-3">
+            <button onclick="toggleStatus('${i.id}',${i.isPublished},'workshops')"
+              class="rounded-full px-2.5 py-0.5 text-xs font-semibold ${i.isPublished?'bg-emerald-500/20 text-emerald-400':'bg-slate-500/20 text-slate-400'}">
+              ${i.isPublished?'Published':'Draft'}
+            </button>
+          </td>
+          <td class="px-5 py-3">
+            <div class="flex gap-2">
+              <button onclick='openEdit(${JSON.stringify(i).replace(/'/g,"\\'")})'
+                class="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-slate-300 hover:bg-white/5">Edit</button>
+              <button onclick="deleteItem('${i.id}','workshops')"
+                class="rounded-lg border border-red-500/30 px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10">Delete</button>
+            </div>
+          </td>
+        </tr>`).join('')}
+        ${items.length===0?'<tr><td colspan="6" class="px-5 py-10 text-center text-slate-500">No workshops yet.</td></tr>':''}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Add Modal -->
+<div id="addModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+  <div class="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0a1428] p-6">
+    <h2 class="mb-4 text-lg font-semibold text-white">Add Workshop</h2>
+    <div id="addMsg" class="hidden mb-3 rounded-lg px-4 py-2 text-sm"></div>
+    <form id="addForm" class="grid grid-cols-2 gap-3">
+      <input id="addSlug" placeholder="Slug *" required class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
+      <input id="addTitle" placeholder="Title *" required class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
+      <input id="addPrice" type="number" placeholder="Price *" required class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
+      <input id="addOldPrice" type="number" placeholder="Old Price" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
+      <input id="addCategory" placeholder="Category" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
+      <input id="addWType" placeholder="Type (Live/Pre-Recorded)" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
+      <input id="addDuration" placeholder="Duration" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
+      <input id="addImageUrl" placeholder="Image URL" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
+      <textarea id="addDesc" placeholder="Description" rows="2" class="col-span-2 rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none resize-none"></textarea>
+      <div class="col-span-2 flex justify-end gap-2 pt-1">
+        <button type="button" onclick="document.getElementById('addModal').classList.add('hidden')" class="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-300">Cancel</button>
+        <button type="submit" class="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-sm font-semibold text-white">Create</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+  <div class="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0a1428] p-6">
+    <h2 class="mb-4 text-lg font-semibold text-white">Edit Workshop</h2>
+    <div id="editMsg" class="hidden mb-3 rounded-lg px-4 py-2 text-sm"></div>
+    <form id="editForm" class="grid grid-cols-2 gap-3">
+      <input id="editId" type="hidden"/>
+      <input id="editTitle" placeholder="Title *" required class="col-span-2 rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
+      <input id="editPrice" type="number" placeholder="Price *" required class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
+      <input id="editOldPrice" type="number" placeholder="Old Price" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
+      <input id="editCategory" placeholder="Category" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
+      <input id="editWType" placeholder="Type" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
+      <input id="editDuration" placeholder="Duration" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
+      <input id="editImageUrl" placeholder="Image URL" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
+      <textarea id="editDesc" placeholder="Description" rows="2" class="col-span-2 rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none resize-none"></textarea>
+      <div class="col-span-2 flex justify-end gap-2 pt-1">
+        <button type="button" onclick="document.getElementById('editModal').classList.add('hidden')" class="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-300">Cancel</button>
+        <button type="submit" class="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-sm font-semibold text-white">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  var token=localStorage.getItem('cnc_token');
+  function showMsg(id,t,e){var el=document.getElementById(id);el.textContent=t;el.className='mb-3 rounded-lg px-4 py-2 text-sm '+(e?'bg-red-500/20 text-red-400':'bg-green-500/20 text-green-400');el.classList.remove('hidden');}
+  function openEdit(i){document.getElementById('editId').value=i.id;document.getElementById('editTitle').value=i.title||'';document.getElementById('editPrice').value=i.price||'';document.getElementById('editOldPrice').value=i.oldPrice||'';document.getElementById('editCategory').value=i.category||'';document.getElementById('editWType').value=i.wType||'';document.getElementById('editDuration').value=i.duration||'';document.getElementById('editImageUrl').value=i.imageUrl||'';document.getElementById('editDesc').value=i.description||'';document.getElementById('editModal').classList.remove('hidden');}
+  async function toggleStatus(id,cur,type){await fetch('/api/admin/'+type+'/'+id,{method:'PATCH',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({isPublished:!cur})});location.reload();}
+  async function deleteItem(id,type){if(!confirm('Delete?'))return;var r=await fetch('/api/admin/'+type+'/'+id,{method:'DELETE',headers:{'Authorization':'Bearer '+token}});if(r.ok)document.getElementById('row-'+id).remove();}
+  document.getElementById('addForm').addEventListener('submit',async function(e){e.preventDefault();var r=await fetch('/api/admin/workshops',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({slug:document.getElementById('addSlug').value,title:document.getElementById('addTitle').value,price:document.getElementById('addPrice').value,oldPrice:document.getElementById('addOldPrice').value,category:document.getElementById('addCategory').value,wType:document.getElementById('addWType').value,duration:document.getElementById('addDuration').value,imageUrl:document.getElementById('addImageUrl').value,description:document.getElementById('addDesc').value})});var d=await r.json();if(!r.ok)return showMsg('addMsg',d.error||'Failed',true);showMsg('addMsg','Created!',false);setTimeout(()=>location.reload(),700);});
+  document.getElementById('editForm').addEventListener('submit',async function(e){e.preventDefault();var id=document.getElementById('editId').value;var r=await fetch('/api/admin/workshops/'+id,{method:'PATCH',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({title:document.getElementById('editTitle').value,price:document.getElementById('editPrice').value,oldPrice:document.getElementById('editOldPrice').value,category:document.getElementById('editCategory').value,wType:document.getElementById('editWType').value,duration:document.getElementById('editDuration').value,imageUrl:document.getElementById('editImageUrl').value,description:document.getElementById('editDesc').value})});var d=await r.json();if(!r.ok)return showMsg('editMsg',d.error||'Failed',true);showMsg('editMsg','Saved!',false);setTimeout(()=>location.reload(),700);});
+</script>`;
+%>
+<%- include('layout', { pageTitle, authUser, adminNav, body }) %>

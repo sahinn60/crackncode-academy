@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="bn" class="scroll-smooth">
+<head>
+  <%- include('../partials/head') %>
+</head>
+<body class="min-h-screen bg-night font-display text-slate-200 antialiased">
+  <%- include('../partials/navbar') %>
+
+  <main class="mx-auto max-w-6xl px-4 py-8 md:px-6">
+    <nav class="mb-6 text-sm text-slate-500">
+      <a href="/" class="hover:text-sky">হোম</a>
+      <span class="mx-2">›</span>
+      <a href="/ebooks" class="hover:text-sky">ই-বুক</a>
+      <span class="mx-2">›</span>
+      <span class="text-slate-300"><%= ebook.title %></span>
+    </nav>
+
+    <section class="grid gap-8 lg:grid-cols-[360px_1fr]">
+      <div class="overflow-hidden rounded-3xl border border-white/10 bg-card p-4">
+        <div class="overflow-hidden rounded-2xl ring-1 ring-white/10">
+          <img src="<%= ebook.cover %>" alt="" class="w-full object-cover" loading="lazy" width="560" height="760" />
+        </div>
+      </div>
+
+      <div class="rounded-3xl border border-white/10 bg-card p-6 md:p-8">
+        <h1 class="text-2xl font-bold text-white md:text-3xl"><%= ebook.title %></h1>
+        <p class="mt-2 text-sm text-slate-400">
+          Author
+        </p>
+        <div class="mt-2 flex items-center gap-2">
+          <div class="h-9 w-9 rounded-full bg-white/10"></div>
+          <p class="text-sm font-semibold text-white"><%= ebook.author %></p>
+        </div>
+
+        <div class="mt-5 flex flex-wrap items-baseline gap-3">
+          <span class="text-3xl font-extrabold text-fire">৳<%= ebook.price %></span>
+          <span class="text-sm text-slate-500 line-through">৳<%= ebook.old %></span>
+          <% if (discountPct > 0) { %>
+            <span class="rounded-full bg-emerald-500/20 px-2.5 py-1 text-xs font-semibold text-emerald-300"><%= discountPct %>% ছাড়</span>
+          <% } %>
+        </div>
+
+        <div class="mt-6 flex flex-col gap-3 sm:flex-row">
+          <form action="/cart/add" method="post" class="sm:flex-1" data-ajax-cart>
+            <input type="hidden" name="type" value="ebook" />
+            <input type="hidden" name="slug" value="<%= ebook.slug %>" />
+            <input type="hidden" name="redirect" value="/ebooks/<%= ebook.slug %>" />
+            <button type="submit" class="flex w-full items-center justify-center gap-2 rounded-xl bg-sky py-3.5 text-base font-bold text-night shadow-lg transition hover:bg-sky/90">
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.5 6H19M7 13l.4-2M10 21a1 1 0 100-2 1 1 0 000 2zm8 0a1 1 0 100-2 1 1 0 000 2z"/></svg>
+              Add To Cart
+            </button>
+          </form>
+
+          <a href="/checkout?type=ebook&slug=<%= encodeURIComponent(ebook.slug) %>" class="sm:flex-1 flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-500/10 py-3.5 text-base font-bold text-emerald-200 transition hover:bg-emerald-500/15">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Buy Now
+          </a>
+        </div>
+
+        <div class="mt-8 space-y-4 text-sm leading-7 text-slate-300">
+          <h2 class="text-lg font-semibold text-white">বিস্তারিত</h2>
+          <p>
+            এই ই-বুকে আপনি পাবেন কাজের উদাহরণ, চেকলিস্ট এবং স্টেপ-বাই-স্টেপ গাইড — যাতে কম সময়ে পরিষ্কারভাবে শিখে বাস্তবে প্রয়োগ করতে পারেন।
+          </p>
+          <ul class="list-disc space-y-2 pl-5 text-slate-300">
+            <li>কীভাবে শুরু করবেন এবং কোন ভুলগুলো এড়াবেন</li>
+            <li>প্র্যাকটিক্যাল টিপস ও রিয়েল-ওয়ার্ল্ড রিসোর্স</li>
+            <li>শুরু থেকে শেষ পর্যন্ত একটি পরিষ্কার রোডম্যাপ</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <%- include('../partials/footer') %>
+  <%- include('../partials/scripts') %>
+</body>
+</html>
+

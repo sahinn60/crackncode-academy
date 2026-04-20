@@ -1,0 +1,44 @@
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title><%= typeof pageTitle !== 'undefined' && pageTitle ? pageTitle + ' | ' : '' %>CrackNcode Academy</title>
+<!-- Apply saved theme BEFORE render to prevent flash -->
+<script>
+  (function() {
+    if (localStorage.getItem('cnc_theme') === 'light') {
+      document.documentElement.classList.add('light');
+    }
+  })();
+</script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          display: ['"Hind Siliguri"', "system-ui", "sans-serif"],
+          sans: ['"Hind Siliguri"', "system-ui", "sans-serif"],
+        },
+        colors: {
+          night: "#050a14",
+          card: "#0a192f",
+          line: "#112240",
+          sky: "#00a2ff",
+          fire: "#ff6600",
+        },
+      },
+    },
+  };
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+  html.light body { background: #f1f5f9 !important; color: #0f172a !important; }
+  html.light .bg-night { background-color: #f1f5f9 !important; }
+  html.light .text-white { color: #0f172a !important; }
+  html.light .text-slate-300, html.light .text-slate-400 { color: #475569 !important; }
+  html.light .border-white\/5, html.light .border-white\/10 { border-color: rgba(15, 23, 42, 0.12) !important; }
+  html.light .bg-\[\#0a1428\], html.light .bg-\[\#0a192f\], html.light .bg-card { background-color: #e2e8f0 !important; }
+  html.light header { background: rgba(241, 245, 249, 0.95) !important; }
+  html.light footer { background: #e2e8f0 !important; }
+</style>

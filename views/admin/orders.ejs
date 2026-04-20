@@ -1,0 +1,61 @@
+<%
+var body = `
+<div class="mb-5">
+  <p class="text-sm text-slate-400">${orders.length} total orders</p>
+</div>
+
+<div class="rounded-2xl border border-white/10 bg-[#0a1428] overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-white/10 text-xs text-slate-500">
+          <th class="px-5 py-3 text-left">Order ID</th>
+          <th class="px-5 py-3 text-left">User</th>
+          <th class="px-5 py-3 text-left">Items</th>
+          <th class="px-5 py-3 text-left">Total</th>
+          <th class="px-5 py-3 text-left">Status</th>
+          <th class="px-5 py-3 text-left">Date</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${orders.map(o => `
+        <tr class="border-b border-white/5 hover:bg-white/5">
+          <td class="px-5 py-3 font-mono text-xs text-slate-400">${o.id.slice(0,14)}…</td>
+          <td class="px-5 py-3">
+            <p class="text-white">${o.user ? o.user.name : '—'}</p>
+            <p class="text-xs text-slate-500">${o.user ? o.user.email : ''}</p>
+          </td>
+          <td class="px-5 py-3 text-slate-300">${o.items.length} item${o.items.length !== 1 ? 's' : ''}</td>
+          <td class="px-5 py-3 font-semibold text-white">৳ ${o.totalPrice.toLocaleString()}</td>
+          <td class="px-5 py-3">
+            <select onchange="updateStatus('${o.id}', this.value)"
+              class="rounded-lg border border-white/10 bg-[#000b1a] px-2 py-1 text-xs focus:outline-none ${
+                o.status === 'PAID'     ? 'text-emerald-400' :
+                o.status === 'PENDING'  ? 'text-amber-400' :
+                o.status === 'REFUNDED' ? 'text-blue-400' : 'text-red-400'
+              }">
+              ${['PENDING','PAID','FAILED','REFUNDED'].map(s =>
+                `<option value="${s}" ${o.status === s ? 'selected' : ''} class="text-white bg-[#0a1428]">${s}</option>`
+              ).join('')}
+            </select>
+          </td>
+          <td class="px-5 py-3 text-slate-400">${new Date(o.createdAt).toLocaleDateString('en-GB')}</td>
+        </tr>`).join('')}
+        ${orders.length === 0 ? '<tr><td colspan="6" class="px-5 py-10 text-center text-slate-500">No orders yet.</td></tr>' : ''}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  var token = localStorage.getItem('cnc_token');
+  async function updateStatus(id, status) {
+    await fetch('/api/admin/orders/' + id + '/status', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ status }),
+    });
+  }
+</script>`;
+%>
+<%- include('layout', { pageTitle, authUser, adminNav, body }) %>

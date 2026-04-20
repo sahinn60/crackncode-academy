@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="bn" class="scroll-smooth">
+<head>
+  <%- include('../partials/head') %>
+</head>
+<body class="min-h-screen bg-night font-display text-slate-200 antialiased">
+  <%- include('../partials/navbar') %>
+  <main class="mx-auto max-w-7xl px-4 py-8 md:px-6">
+    <nav class="mb-6 text-sm text-slate-500">
+      <a href="/" class="hover:text-sky">হোম</a>
+      <span class="mx-2">›</span>
+      <span class="text-slate-300">Search</span>
+    </nav>
+    <h1 class="text-2xl font-bold text-white md:text-3xl">
+      <% if (query && String(query).trim()) { %>
+        “<%= query %>” — <%= totalResults %> ফলাফল
+      <% } else { %>
+        সার্চ করতে উপরের বক্সে লিখুন
+      <% } %>
+    </h1>
+    <% if (courses.length) { %>
+      <section class="mt-10">
+        <h2 class="mb-4 text-lg font-semibold text-sky">কোর্স</h2>
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <% courses.forEach(function (c) { %>
+            <a href="/courses/<%= c.slug %>" class="rounded-xl border border-white/10 bg-card p-4 transition hover:border-sky/40">
+              <p class="font-semibold text-white"><%= c.title %></p>
+              <p class="mt-1 text-sm text-slate-400 line-clamp-2"><%= c.desc || c.description || '' %></p>
+              <p class="mt-2 text-fire">৳<%= c.price.toLocaleString("bn-BD") %></p>
+            </a>
+          <% }); %>
+        </div>
+      </section>
+    <% } %>
+    <% if (bundles.length) { %>
+      <section class="mt-10">
+        <h2 class="mb-4 text-lg font-semibold text-sky">বান্ডেল</h2>
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <% bundles.forEach(function (b) { %>
+            <a href="/bundles" class="rounded-xl border border-white/10 bg-card p-4 hover:border-sky/40">
+              <p class="font-semibold text-white"><%= b.title %></p>
+              <p class="mt-2 text-fire">৳<%= b.price.toLocaleString("bn-BD") %></p>
+            </a>
+          <% }); %>
+        </div>
+      </section>
+    <% } %>
+    <% if (workshops.length) { %>
+      <section class="mt-10">
+        <h2 class="mb-4 text-lg font-semibold text-sky">ওয়ার্কশপ</h2>
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <% workshops.forEach(function (w) { %>
+            <a href="/workshops" class="rounded-xl border border-white/10 bg-card p-4 hover:border-sky/40">
+              <p class="font-semibold text-white"><%= w.title %></p>
+              <p class="mt-2 text-fire">৳<%= w.price.toLocaleString("bn-BD") %></p>
+            </a>
+          <% }); %>
+        </div>
+      </section>
+    <% } %>
+    <% if (ebooks.length) { %>
+      <section class="mt-10">
+        <h2 class="mb-4 text-lg font-semibold text-sky">ই-বুক</h2>
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <% ebooks.forEach(function (e) { %>
+            <a href="/ebooks" class="rounded-xl border border-white/10 bg-card p-4 hover:border-sky/40">
+              <p class="font-semibold text-white"><%= e.title %></p>
+              <p class="mt-2 text-fire">৳<%= e.price %></p>
+            </a>
+          <% }); %>
+        </div>
+      </section>
+    <% } %>
+    <% if (blogs.length) { %>
+      <section class="mt-10">
+        <h2 class="mb-4 text-lg font-semibold text-sky">ব্লগ</h2>
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <% blogs.forEach(function (b) { %>
+            <div class="rounded-xl border border-white/10 bg-card p-4">
+              <p class="font-semibold text-white"><%= b.title %></p>
+              <p class="mt-1 text-sm text-slate-400 line-clamp-2"><%= b.excerpt %></p>
+            </div>
+          <% }); %>
+        </div>
+      </section>
+    <% } %>
+    <% if (query && String(query).trim() && !totalResults) { %>
+      <p class="mt-10 text-center text-slate-400">কিছু মেলেনি। <a href="/courses" class="text-sky hover:underline">সব কোর্স দেখুন</a></p>
+    <% } %>
+  </main>
+  <%- include('../partials/footer') %>
+  <%- include('../partials/scripts') %>
+</body>
+</html>

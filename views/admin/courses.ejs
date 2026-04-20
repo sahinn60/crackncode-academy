@@ -1,0 +1,180 @@
+<%
+var body = `
+<div class="mb-5 flex items-center justify-between">
+  <p class="text-sm text-slate-400">${courses.length} courses total</p>
+  <button onclick="document.getElementById('addModal').classList.remove('hidden')"
+    class="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-sm font-semibold text-white hover:opacity-90">
+    + Add Course
+  </button>
+</div>
+
+<div class="rounded-2xl border border-white/10 bg-[#0a1428] overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-white/10 text-xs text-slate-500">
+          <th class="px-5 py-3 text-left">Course</th>
+          <th class="px-5 py-3 text-left">Category</th>
+          <th class="px-5 py-3 text-left">Price</th>
+          <th class="px-5 py-3 text-left">Status</th>
+          <th class="px-5 py-3 text-left">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${courses.map(c => `
+        <tr class="border-b border-white/5 hover:bg-white/5" id="row-${c.id}">
+          <td class="px-5 py-3">
+            <div class="flex items-center gap-3">
+              ${c.imageUrl ? `<img src="${c.imageUrl}" class="h-10 w-14 rounded-lg object-cover shrink-0" />` : '<div class="h-10 w-14 rounded-lg bg-white/10 shrink-0"></div>'}
+              <div>
+                <p class="font-medium text-white">${c.title}</p>
+                <p class="text-xs text-slate-500">${c.slug}</p>
+              </div>
+            </div>
+          </td>
+          <td class="px-5 py-3 text-slate-400">${c.category || '—'}</td>
+          <td class="px-5 py-3 text-white">৳ ${c.price.toLocaleString()}</td>
+          <td class="px-5 py-3">
+            <button onclick="togglePublish('${c.id}', ${c.isPublished})"
+              class="rounded-full px-2.5 py-0.5 text-xs font-semibold ${c.isPublished ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-500/20 text-slate-400'}">
+              ${c.isPublished ? 'Published' : 'Draft'}
+            </button>
+          </td>
+          <td class="px-5 py-3">
+            <div class="flex items-center gap-2">
+              <button onclick="openEdit(${JSON.stringify(c).replace(/"/g, '&quot;')})"
+                class="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-slate-300 hover:bg-white/5">Edit</button>
+              <button onclick="deleteCourse('${c.id}')"
+                class="rounded-lg border border-red-500/30 px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10">Delete</button>
+            </div>
+          </td>
+        </tr>`).join('')}
+        ${courses.length === 0 ? '<tr><td colspan="5" class="px-5 py-10 text-center text-slate-500">No courses yet.</td></tr>' : ''}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Add Modal -->
+<div id="addModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+  <div class="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0a1428] p-6">
+    <h2 class="mb-4 text-lg font-semibold text-white">Add New Course</h2>
+    <div id="addMsg" class="hidden mb-3 rounded-lg px-4 py-2 text-sm"></div>
+    <form id="addForm" class="space-y-3">
+      <div class="grid grid-cols-2 gap-3">
+        <input name="slug" placeholder="slug *" required class="col-span-2 rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none" />
+        <input name="title" placeholder="Title *" required class="col-span-2 rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none" />
+        <input name="price" type="number" placeholder="Price *" required class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none" />
+        <input name="oldPrice" type="number" placeholder="Old Price" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none" />
+        <input name="category" placeholder="Category" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none" />
+        <input name="level" placeholder="Level" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none" />
+        <input name="imageUrl" placeholder="Image URL" class="col-span-2 rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none" />
+        <textarea name="description" placeholder="Description" rows="2" class="col-span-2 rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none resize-none"></textarea>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" onclick="document.getElementById('addModal').classList.add('hidden')"
+          class="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/5">Cancel</button>
+        <button type="submit" class="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-sm font-semibold text-white">Create</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+  <div class="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0a1428] p-6">
+    <h2 class="mb-4 text-lg font-semibold text-white">Edit Course</h2>
+    <div id="editMsg" class="hidden mb-3 rounded-lg px-4 py-2 text-sm"></div>
+    <form id="editForm" class="space-y-3">
+      <input id="editId" type="hidden" />
+      <div class="grid grid-cols-2 gap-3">
+        <input id="editTitle" name="title" placeholder="Title *" required class="col-span-2 rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none" />
+        <input id="editPrice" name="price" type="number" placeholder="Price *" required class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none" />
+        <input id="editOldPrice" name="oldPrice" type="number" placeholder="Old Price" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none" />
+        <input id="editCategory" name="category" placeholder="Category" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none" />
+        <input id="editLevel" name="level" placeholder="Level" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none" />
+        <input id="editImageUrl" name="imageUrl" placeholder="Image URL" class="col-span-2 rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none" />
+        <textarea id="editDescription" name="description" placeholder="Description" rows="2" class="col-span-2 rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none resize-none"></textarea>
+      </div>
+      <div class="flex justify-end gap-2 pt-2">
+        <button type="button" onclick="document.getElementById('editModal').classList.add('hidden')"
+          class="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/5">Cancel</button>
+        <button type="submit" class="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-sm font-semibold text-white">Save</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+  var token = localStorage.getItem('cnc_token');
+
+  function showMsg(id, text, isError) {
+    var el = document.getElementById(id);
+    el.textContent = text;
+    el.className = 'mb-3 rounded-lg px-4 py-2 text-sm ' + (isError ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400');
+    el.classList.remove('hidden');
+  }
+
+  function openEdit(c) {
+    document.getElementById('editId').value = c.id;
+    document.getElementById('editTitle').value = c.title || '';
+    document.getElementById('editPrice').value = c.price || '';
+    document.getElementById('editOldPrice').value = c.oldPrice || '';
+    document.getElementById('editCategory').value = c.category || '';
+    document.getElementById('editLevel').value = c.level || '';
+    document.getElementById('editImageUrl').value = c.imageUrl || '';
+    document.getElementById('editDescription').value = c.description || '';
+    document.getElementById('editModal').classList.remove('hidden');
+  }
+
+  async function togglePublish(id, current) {
+    var res = await fetch('/api/admin/courses/' + id, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ isPublished: !current }),
+    });
+    if (res.ok) location.reload();
+  }
+
+  async function deleteCourse(id) {
+    if (!confirm('Delete this course?')) return;
+    var res = await fetch('/api/admin/courses/' + id, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    if (res.ok) document.getElementById('row-' + id).remove();
+  }
+
+  document.getElementById('addForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    var fd = new FormData(e.target);
+    var body = Object.fromEntries(fd.entries());
+    var res = await fetch('/api/admin/courses', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify(body),
+    });
+    var data = await res.json();
+    if (!res.ok) return showMsg('addMsg', data.error || 'Failed', true);
+    showMsg('addMsg', 'Course created!', false);
+    setTimeout(() => location.reload(), 800);
+  });
+
+  document.getElementById('editForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    var id = document.getElementById('editId').value;
+    var fd = new FormData(e.target);
+    var body = Object.fromEntries(fd.entries());
+    var res = await fetch('/api/admin/courses/' + id, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify(body),
+    });
+    var data = await res.json();
+    if (!res.ok) return showMsg('editMsg', data.error || 'Failed', true);
+    showMsg('editMsg', 'Saved!', false);
+    setTimeout(() => location.reload(), 800);
+  });
+</script>`;
+%>
+<%- include('layout', { pageTitle, authUser, adminNav, body }) %>

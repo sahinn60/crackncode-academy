@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="bn" class="scroll-smooth">
+<head>
+  <%- include('../partials/head') %>
+</head>
+<body class="min-h-screen bg-night font-display text-slate-200 antialiased">
+  <%- include('../partials/navbar') %>
+  <main class="mx-auto max-w-7xl px-4 py-8 md:px-6">
+    <nav class="mb-6 text-sm text-slate-500" aria-label="Breadcrumb">
+      <a href="/" class="hover:text-sky">হোম</a>
+      <span class="mx-2">›</span>
+      <span class="text-slate-300">কোর্স</span>
+    </nav>
+    <% if (typeof searchFilter !== 'undefined' && searchFilter) { %>
+      <p class="mb-4 rounded-xl border border-sky/30 bg-sky/10 px-4 py-2 text-sm text-sky">সার্চ ফিল্টার: “<%= searchFilter %>” — <%= count %> টি কোর্স</p>
+    <% } %>
+    <div class="grid gap-8 lg:grid-cols-[260px_1fr]">
+      <%- include('../partials/sidebar-filters', { filterTypeLabel: 'কোর্স টাইপ' }) %>
+      <div>
+        <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <h1 class="text-2xl font-bold text-white md:text-3xl"><%= count %> Courses Found</h1>
+          <div class="flex items-center gap-2">
+            <label class="text-sm text-slate-400">সর্টিং</label>
+            <select class="rounded-xl border border-white/10 bg-[#0a1428] px-4 py-2.5 text-sm text-white focus:border-sky/50 focus:outline-none">
+              <option>Default Sorting</option>
+              <option>দাম: কম থেকে বেশি</option>
+              <option>দাম: বেশি থেকে কম</option>
+            </select>
+          </div>
+        </div>
+        <div class="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
+          <% courses.forEach(function (c) { %>
+            <article class="flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-card shadow-lg transition hover:border-sky/40">
+              <a href="/courses/<%= c.slug %>" class="aspect-video block overflow-hidden">
+                <img src="<%= c.image %>" alt="" class="h-full w-full object-cover transition hover:scale-105" loading="lazy" width="640" height="400" />
+              </a>
+              <div class="flex flex-1 flex-col p-5">
+                <a href="/courses/<%= c.slug %>" class="text-lg font-bold text-white hover:text-sky"><%= c.title %></a>
+                <p class="mt-2 line-clamp-2 text-sm text-slate-400"><%= c.desc %></p>
+                <div class="mt-4 flex items-baseline gap-2">
+                  <span class="text-xl font-bold text-fire">৳<%= c.price.toLocaleString("bn-BD") %></span>
+                  <span class="text-sm text-slate-500 line-through">৳<%= c.oldPrice.toLocaleString("bn-BD") %></span>
+                </div>
+                <div class="mt-4 grid flex-1 grid-cols-2 gap-2 self-stretch">
+                  <form action="/cart/add" method="post" data-ajax-cart>
+                    <input type="hidden" name="type" value="course" />
+                    <input type="hidden" name="slug" value="<%= c.slug %>" />
+                    <input type="hidden" name="redirect" value="/courses" />
+                    <button type="submit" class="flex w-full items-center justify-center gap-1 rounded-xl bg-sky py-2.5 text-sm font-semibold text-night hover:bg-sky/90">
+                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4"/></svg>
+                      কার্ট
+                    </button>
+                  </form>
+                  <a href="/courses/<%= c.slug %>" class="flex items-center justify-center gap-1 rounded-xl border border-sky/50 bg-night/40 py-2.5 text-sm font-medium text-sky hover:bg-sky/10">
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    ডিটেইলস
+                  </a>
+                </div>
+              </div>
+            </article>
+          <% }); %>
+        </div>
+      </div>
+    </div>
+  </main>
+  <%- include('../partials/footer') %>
+  <button type="button" id="toTop" class="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-sky text-night shadow-lg opacity-0 pointer-events-none transition-opacity" aria-label="উপরে">
+    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+  </button>
+  <%- include('../partials/scripts') %>
+</body>
+</html>

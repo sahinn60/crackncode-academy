@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="bn" class="scroll-smooth">
+<head>
+  <%- include('../partials/head') %>
+</head>
+<body class="min-h-screen bg-night font-display text-slate-200 antialiased">
+  <%- include('../partials/navbar') %>
+  <main class="mx-auto max-w-7xl px-4 py-8 md:px-6">
+    <nav class="mb-6 text-sm text-slate-500">
+      <a href="/" class="hover:text-sky">হোম</a>
+      <span class="mx-2">›</span>
+      <span class="text-slate-300">বান্ডেল</span>
+    </nav>
+    <div class="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <h1 class="text-2xl font-bold text-white md:text-3xl"><%= count %> Bundles Found</h1>
+      <select class="w-full rounded-xl border border-white/10 bg-[#0a1428] px-4 py-2.5 text-sm text-white sm:w-56">
+        <option>Default Sorting</option>
+      </select>
+    </div>
+    <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+      <% bundles.forEach(function (b) { %>
+        <article class="flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-card shadow-lg">
+          <% if (b.layout === 'combo') { %>
+            <div class="divide-y divide-white/10 border-b border-white/10">
+              <div class="flex gap-3 p-3">
+                <img src="<%= b.mainItem.thumb %>" alt="" class="h-16 w-24 rounded-lg object-cover" width="120" height="80" />
+                <div class="min-w-0 text-xs">
+                  <p class="font-semibold text-sky"><%= b.mainItem.label %></p>
+                  <p class="mt-1 font-medium text-white"><%= b.mainItem.title %></p>
+                </div>
+              </div>
+              <div class="relative flex gap-3 p-3">
+                <span class="absolute left-1/2 top-0 z-10 flex h-8 w-8 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-amber-400/50 bg-card text-amber-400" title="Bonus">🎁</span>
+                <img src="<%= b.bonusItem.thumb %>" alt="" class="h-16 w-24 rounded-lg object-cover" width="120" height="80" />
+                <div class="min-w-0 text-xs">
+                  <p class="font-semibold text-emerald-400"><%= b.bonusItem.label %></p>
+                  <p class="mt-1 font-medium text-white"><%= b.bonusItem.title %></p>
+                </div>
+              </div>
+            </div>
+          <% } else { %>
+            <a href="/bundles/<%= b.id || b.slug || '' %>" class="block aspect-video overflow-hidden ring-2 ring-amber-400/20">
+              <img src="<%= b.image %>" alt="" class="h-full w-full object-cover transition hover:scale-105 duration-300" loading="lazy" width="640" height="360" />
+            </a>
+          <% } %>
+          <div class="flex flex-1 flex-col p-5">
+            <h2 class="font-bold text-white"><%= b.title %></h2>
+            <div class="mt-3 flex items-baseline gap-2">
+              <span class="text-xl font-bold text-fire">৳<%= b.price.toLocaleString("bn-BD") %></span>
+              <span class="text-sm text-slate-500 line-through">৳<%= b.old.toLocaleString("bn-BD") %></span>
+            </div>
+            <div class="mt-4 grid flex-1 grid-cols-2 gap-2">
+              <form action="/cart/add" method="post" data-ajax-cart>
+                <input type="hidden" name="type" value="bundle" />
+                <input type="hidden" name="slug" value="<%= b.id || b.slug %>" />
+                <input type="hidden" name="redirect" value="/bundles" />
+                <button type="submit" class="flex w-full items-center justify-center gap-1 rounded-xl bg-sky py-2.5 text-sm font-semibold text-night hover:bg-sky/90">
+                  <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4"/></svg>
+                  কার্ট
+                </button>
+              </form>
+              <a href="/bundles/<%= b.id || b.slug || '' %>" class="flex items-center justify-center gap-1 rounded-xl border border-sky/40 bg-night/50 py-2.5 text-sm text-sky hover:bg-sky/10">
+                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                ডিটেইলস
+              </a>
+            </div>
+          </div>
+        </article>
+      <% }); %>
+    </div>
+    <div class="mt-10 flex justify-center">
+      <span class="rounded-full bg-sky px-6 py-2 text-sm font-semibold text-night">আরও দেখুন</span>
+    </div>
+  </main>
+  <%- include('../partials/footer') %>
+  <button type="button" id="toTop" class="fixed bottom-6 right-6 z-50 flex h-12 w-12 items-center justify-center rounded-full bg-sky text-night opacity-0 pointer-events-none transition-opacity" aria-label="উপরে">
+    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+  </button>
+  <%- include('../partials/scripts') %>
+</body>
+</html>

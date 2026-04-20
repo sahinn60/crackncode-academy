@@ -1,0 +1,69 @@
+<%
+var body = `
+<div class="mb-5">
+  <p class="text-sm text-slate-400">${users.length} registered users</p>
+</div>
+
+<div class="rounded-2xl border border-white/10 bg-[#0a1428] overflow-hidden">
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm">
+      <thead>
+        <tr class="border-b border-white/10 text-xs text-slate-500">
+          <th class="px-5 py-3 text-left">User</th>
+          <th class="px-5 py-3 text-left">Role</th>
+          <th class="px-5 py-3 text-left">Courses</th>
+          <th class="px-5 py-3 text-left">Orders</th>
+          <th class="px-5 py-3 text-left">Joined</th>
+          <th class="px-5 py-3 text-left">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${users.map(u => `
+        <tr class="border-b border-white/5 hover:bg-white/5" id="urow-${u.id}">
+          <td class="px-5 py-3">
+            <div class="flex items-center gap-3">
+              <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-[#00a2ff] to-[#ff6600] text-xs font-bold text-white">
+                ${u.name.slice(0,2).toUpperCase()}
+              </span>
+              <div>
+                <p class="font-medium text-white">${u.name}</p>
+                <p class="text-xs text-slate-500">${u.email}</p>
+              </div>
+            </div>
+          </td>
+          <td class="px-5 py-3">
+            <span class="rounded-full px-2.5 py-0.5 text-xs font-semibold ${u.role === 'ADMIN' ? 'bg-cyan-500/20 text-cyan-400' : 'bg-blue-500/20 text-blue-400'}">
+              ${u.role}
+            </span>
+          </td>
+          <td class="px-5 py-3 text-slate-300">${u._count.enrollments}</td>
+          <td class="px-5 py-3 text-slate-300">${u._count.orders}</td>
+          <td class="px-5 py-3 text-slate-400">${new Date(u.createdAt).toLocaleDateString('en-GB')}</td>
+          <td class="px-5 py-3">
+            <button onclick="toggleRole('${u.id}', '${u.role}')"
+              class="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-slate-300 hover:bg-white/5">
+              Make ${u.role === 'ADMIN' ? 'User' : 'Admin'}
+            </button>
+          </td>
+        </tr>`).join('')}
+        ${users.length === 0 ? '<tr><td colspan="6" class="px-5 py-10 text-center text-slate-500">No users yet.</td></tr>' : ''}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  var token = localStorage.getItem('cnc_token');
+  async function toggleRole(id, current) {
+    var newRole = current === 'ADMIN' ? 'USER' : 'ADMIN';
+    if (!confirm('Change role to ' + newRole + '?')) return;
+    var res = await fetch('/api/admin/users/' + id + '/role', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ role: newRole }),
+    });
+    if (res.ok) location.reload();
+  }
+</script>`;
+%>
+<%- include('layout', { pageTitle, authUser, adminNav, body }) %>

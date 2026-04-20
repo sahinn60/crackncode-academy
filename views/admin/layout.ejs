@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= pageTitle %> — CrackNcode Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            night: "#000b1a",
+            card:  "#0a1428",
+            sky:   "#00a2ff",
+            fire:  "#ff6600",
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="min-h-screen bg-[#000b1a] text-slate-200 flex">
+
+  <!-- Sidebar -->
+  <aside id="sidebar" class="fixed inset-y-0 left-0 z-40 flex w-60 flex-col border-r border-white/10 bg-[#0a1428] transition-transform duration-200 lg:translate-x-0 -translate-x-full">
+    <div class="flex h-16 items-center gap-2 border-b border-white/10 px-5">
+      <div class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#00a2ff] to-[#ff6600] text-xs font-bold text-white">CN</div>
+      <span class="font-bold text-white">Admin Panel</span>
+    </div>
+    <nav class="flex-1 overflow-y-auto px-3 py-4 space-y-1">
+      <a href="/admin" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm <%= adminNav==='dashboard' ? 'bg-[#00a2ff]/20 text-[#00a2ff] font-semibold' : 'text-slate-300 hover:bg-white/5 hover:text-white' %>">
+        <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+        Dashboard
+      </a>
+      <a href="/admin/courses" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm <%= adminNav==='courses' ? 'bg-[#00a2ff]/20 text-[#00a2ff] font-semibold' : 'text-slate-300 hover:bg-white/5 hover:text-white' %>">
+        <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+        Courses
+      </a>
+      <a href="/admin/users" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm <%= adminNav==='users' ? 'bg-[#00a2ff]/20 text-[#00a2ff] font-semibold' : 'text-slate-300 hover:bg-white/5 hover:text-white' %>">
+        <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+        Users
+      </a>
+      <a href="/admin/orders" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm <%= adminNav==='orders' ? 'bg-[#00a2ff]/20 text-[#00a2ff] font-semibold' : 'text-slate-300 hover:bg-white/5 hover:text-white' %>">
+        <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+        Orders
+      </a>
+      <a href="/admin/messages" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm <%= adminNav==='messages' ? 'bg-[#00a2ff]/20 text-[#00a2ff] font-semibold' : 'text-slate-300 hover:bg-white/5 hover:text-white' %>">
+        <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+        Messages
+      </a>
+      <a href="/admin/bundles" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm <%= adminNav==='bundles' ? 'bg-[#00a2ff]/20 text-[#00a2ff] font-semibold' : 'text-slate-300 hover:bg-white/5 hover:text-white' %>">
+        <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+        Bundles
+      </a>
+      <a href="/admin/workshops" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm <%= adminNav==='workshops' ? 'bg-[#00a2ff]/20 text-[#00a2ff] font-semibold' : 'text-slate-300 hover:bg-white/5 hover:text-white' %>">
+        <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.069A1 1 0 0121 8.87v6.26a1 1 0 01-1.447.894L15 14M3 8h12v8H3z"/></svg>
+        Workshops
+      </a>
+      <a href="/admin/ebooks" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm <%= adminNav==='ebooks' ? 'bg-[#00a2ff]/20 text-[#00a2ff] font-semibold' : 'text-slate-300 hover:bg-white/5 hover:text-white' %>">
+        <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+        E-Books
+      </a>
+      <a href="/admin/blogs" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm <%= adminNav==='blogs' ? 'bg-[#00a2ff]/20 text-[#00a2ff] font-semibold' : 'text-slate-300 hover:bg-white/5 hover:text-white' %>">
+        <svg class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+        Blogs
+      </a>
+    </nav>
+    <div class="border-t border-white/10 p-3">
+      <a href="/" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-slate-400 hover:bg-white/5 hover:text-white">
+        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+        Back to Site
+      </a>
+      <form action="/logout" method="POST">
+        <button type="submit" class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-red-400 hover:bg-red-500/10">
+          <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+          Logout
+        </button>
+      </form>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="flex flex-1 flex-col lg:ml-60">
+    <!-- Topbar -->
+    <header class="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-white/10 bg-[#000b1a]/95 px-4 backdrop-blur md:px-6">
+      <button id="sidebarToggle" class="rounded-lg p-2 text-slate-400 hover:bg-white/5 lg:hidden">
+        <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+      <h1 class="text-base font-semibold text-white"><%= pageTitle %></h1>
+      <div class="flex items-center gap-2">
+        <span class="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#00a2ff] to-[#ff6600] text-xs font-bold text-white">
+          <%= authUser.name.slice(0,2).toUpperCase() %>
+        </span>
+        <span class="hidden text-sm text-slate-300 sm:block"><%= authUser.name %></span>
+      </div>
+    </header>
+
+    <!-- Page content -->
+    <main class="flex-1 p-4 md:p-6">
+      <%- body %>
+    </main>
+  </div>
+
+  <script>
+    var toggle = document.getElementById("sidebarToggle");
+    var sidebar = document.getElementById("sidebar");
+    if (toggle) toggle.addEventListener("click", function() {
+      sidebar.classList.toggle("-translate-x-full");
+    });
+    document.addEventListener("click", function(e) {
+      if (sidebar && !sidebar.contains(e.target) && toggle && !toggle.contains(e.target)) {
+        sidebar.classList.add("-translate-x-full");
+      }
+    });
+  </script>
+</body>
+</html>

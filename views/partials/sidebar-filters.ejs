@@ -1,0 +1,48 @@
+<% var typeLabel = typeof filterTypeLabel !== 'undefined' ? filterTypeLabel : 'কোর্স টাইপ'; %>
+<aside class="space-y-4 rounded-2xl border border-white/10 bg-card p-5">
+  <div class="border-b border-white/10 pb-3">
+    <button type="button" class="flex w-full items-center justify-between text-left font-semibold text-white">ক্যাটাগরি <span class="text-sky">−</span></button>
+    <div class="mt-3 space-y-2 text-sm text-slate-300">
+      <label class="flex cursor-pointer items-center gap-2"><input type="checkbox" checked class="rounded border-white/20 bg-night text-sky" /> সব</label>
+      <label class="flex cursor-pointer items-center gap-2"><input type="checkbox" class="rounded border-white/20 bg-night text-sky" /> Artificial Intelligence</label>
+      <label class="flex cursor-pointer items-center gap-2"><input type="checkbox" class="rounded border-white/20 bg-night text-sky" /> Graphic Design</label>
+      <label class="flex cursor-pointer items-center gap-2"><input type="checkbox" class="rounded border-white/20 bg-night text-sky" /> Digital Marketing</label>
+    </div>
+  </div>
+  <div class="border-b border-white/10 pb-3">
+    <button type="button" class="flex w-full items-center justify-between text-left font-semibold text-white"><%= typeLabel %> <span class="text-sky">−</span></button>
+    <div class="mt-3 space-y-2 text-sm text-slate-300">
+      <label class="flex cursor-pointer items-center gap-2"><input type="checkbox" checked class="rounded border-white/20 bg-night text-sky" /> সব</label>
+      <label class="flex cursor-pointer items-center gap-2"><input type="checkbox" class="rounded border-white/20 bg-night text-sky" /> Pre-Recorded</label>
+      <label class="flex cursor-pointer items-center gap-2"><input type="checkbox" class="rounded border-white/20 bg-night text-sky" /> Live Workshop</label>
+      <label class="flex cursor-pointer items-center gap-2"><input type="checkbox" class="rounded border-white/20 bg-night text-sky" /> Offline Workshop</label>
+      <label class="flex cursor-pointer items-center gap-2"><input type="checkbox" class="rounded border-white/20 bg-night text-sky" /> Live Batch</label>
+      <label class="flex cursor-pointer items-center gap-2"><input type="checkbox" class="rounded border-white/20 bg-night text-sky" /> Bootcamp Training</label>
+      <label class="flex cursor-pointer items-center gap-2"><input type="checkbox" class="rounded border-white/20 bg-night text-sky" /> Mentorship Program</label>
+    </div>
+  </div>
+  <div class="border-b border-white/10 pb-3">
+    <button type="button" class="flex w-full items-center justify-between text-left font-semibold text-white">পেশা <span class="text-sky">−</span></button>
+    <div class="mt-3 space-y-2 text-sm text-slate-300">
+      <label class="flex cursor-pointer items-center gap-2"><input type="checkbox" checked class="rounded border-white/20 bg-night text-sky" /> সব</label>
+      <label class="flex cursor-pointer items-center gap-2"><input type="checkbox" class="rounded border-white/20 bg-night text-sky" /> Developer</label>
+      <label class="flex cursor-pointer items-center gap-2"><input type="checkbox" class="rounded border-white/20 bg-night text-sky" /> Student</label>
+      <label class="flex cursor-pointer items-center gap-2"><input type="checkbox" class="rounded border-white/20 bg-night text-sky" /> Service Holder</label>
+      <label class="flex cursor-pointer items-center gap-2"><input type="checkbox" class="rounded border-white/20 bg-night text-sky" /> Entrepreneur</label>
+    </div>
+  </div>
+  <div>
+    <p class="font-semibold text-white">দাম</p>
+    <div class="mt-2 flex gap-2">
+      <button type="button" class="flex-1 rounded-lg border border-white/15 bg-night/50 py-2 text-xs text-slate-300">ফ্রি</button>
+      <button type="button" class="flex-1 rounded-lg border border-sky/50 bg-sky/10 py-2 text-xs text-sky">পেইড</button>
+    </div>
+    <div class="mt-3 flex gap-2">
+      <input type="number" value="0" class="w-full rounded-lg border border-white/10 bg-night px-2 py-2 text-sm text-white" />
+      <input type="number" value="15000" class="w-full rounded-lg border border-white/10 bg-night px-2 py-2 text-sm text-white" />
+    </div>
+    <div class="mt-3 h-2 rounded-full bg-white/10">
+      <div class="h-full w-3/4 rounded-full bg-sky"></div>
+    </div>
+  </div>
+</aside>
