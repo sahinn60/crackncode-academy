@@ -2,7 +2,14 @@ require("dotenv").config();
 const path = require("path");
 const express = require("express");
 const session = require("express-session");
+const helmet = require("helmet");
+const compression = require("compression");
+const morgan = require("morgan");
+const rateLimit = require("express-rate-limit");
 const catalog = require("./data/catalog");
+const { errorHandler, notFound } = require("./backend/middleware/errorHandler");
+const { pageCache } = require("./backend/lib/cache");
+const { paginate, paginationMeta } = require("./backend/lib/paginate");
 
 // API routers
 const authRouter = require("./backend/routes/auth");
@@ -67,18 +74,39 @@ app.get("/cart/count", (req, res) => {
 
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
+app.set("trust proxy", 1);
 
-app.use(express.static(path.join(__dirname, "public")));
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+// ── Security ────────────────────────────────────────────
+app.use(helmet({ contentSecurityPolicy: false }));
+app.use(compression());
+if (process.env.NODE_ENV !== "production") app.use(morgan("dev"));
+
+// Rate limiters
+const globalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 300, standardHeaders: true, legacyHeaders: false, message: { error: "Too many requests, please try again later." } });
+const authLimiter  = rateLimit({ windowMs: 15 * 60 * 1000, max: 20,  standardHeaders: true, legacyHeaders: false, message: { error: "Too many login attempts, please try again later." } });
+const apiLimiter   = rateLimit({ windowMs: 15 * 60 * 1000, max: 100, standardHeaders: true, legacyHeaders: false, message: { error: "API rate limit exceeded." } });
+
+app.use(globalLimiter);
+app.use("/api/auth/login",    authLimiter);
+app.use("/api/auth/register", authLimiter);
+app.use("/api", apiLimiter);
+
+app.use(express.static(path.join(__dirname, "public"), { maxAge: "1d" }));
+app.use(express.urlencoded({ extended: true, limit: "10kb" }));
+app.use(express.json({ limit: "10kb" }));
 
 // ── Session (must be before API routes and all page routes) ──
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "crackncode-academy-dev",
     resave: false,
-    saveUninitialized: true,
-    cookie: { maxAge: 7 * 24 * 60 * 60 * 1000 },
+    saveUninitialized: false,
+    cookie: {
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+    },
   })
 );
 
@@ -150,12 +178,17 @@ app.get("/", async (_req, res) => {
 
 app.get("/courses", async (req, res) => {
   const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
+  const { page, limit, skip } = paginate(req.query);
   const where = { isPublished: true };
   if (q) where.OR = [{ title: { contains: q, mode: "insensitive" } }, { description: { contains: q, mode: "insensitive" } }];
-  const dbCourses = await prismaClient.course.findMany({ where, orderBy: { createdAt: "desc" } });
+  const [dbCourses, total] = await Promise.all([
+    prismaClient.course.findMany({ where, orderBy: { createdAt: "desc" }, skip, take: limit }),
+    prismaClient.course.count({ where }),
+  ]);
   const list = dbCourses.length ? dbCourses.map(c => ({ ...c, image: c.imageUrl, discountPct: c.oldPrice ? Math.round((1 - c.price / c.oldPrice) * 100) : 0 })) : (q ? searchAll(q).courses : courses);
+  const pagination = paginationMeta(total || list.length, page, limit);
   res.locals.activeNav = "courses";
-  renderPage(res, "pages/courses", { pageTitle: "কোর্স", courses: list, count: list.length, searchFilter: q });
+  renderPage(res, "pages/courses", { pageTitle: "কোর্স", courses: list, count: pagination.total, searchFilter: q, pagination });
 });
 
 app.get("/search", async (req, res) => {
@@ -222,11 +255,16 @@ app.get("/workshops/:slug", async (req, res) => {
   renderPage(res, "pages/workshop-detail", { pageTitle: workshop.title, workshop });
 });
 
-app.get("/ebooks", async (_req, res) => {
-  const dbEbooks = await prismaClient.ebook.findMany({ where: { isPublished: true }, orderBy: { createdAt: "desc" } });
+app.get("/ebooks", async (req, res) => {
+  const { page, limit, skip } = paginate(req.query);
+  const [dbEbooks, total] = await Promise.all([
+    prismaClient.ebook.findMany({ where: { isPublished: true }, orderBy: { createdAt: "desc" }, skip, take: limit }),
+    prismaClient.ebook.count({ where: { isPublished: true } }),
+  ]);
   const list = dbEbooks.length ? dbEbooks.map(e => ({ ...e, cover: e.coverUrl, old: e.oldPrice })) : ebooks;
+  const pagination = paginationMeta(total || list.length, page, limit);
   res.locals.activeNav = "ebooks";
-  renderPage(res, "pages/ebooks", { pageTitle: "ই-বুক", ebooks: list, count: list.length });
+  renderPage(res, "pages/ebooks", { pageTitle: "ই-বুক", ebooks: list, count: pagination.total, pagination });
 });
 
 app.get("/ebooks/:slug", async (req, res) => {
@@ -242,11 +280,16 @@ app.get("/ebooks/:slug", async (req, res) => {
   renderPage(res, "pages/ebook-detail", { pageTitle: ebook.title, ebook, discountPct });
 });
 
-app.get("/blog", async (_req, res) => {
-  const dbBlogs = await prismaClient.blog.findMany({ where: { isPublished: true }, orderBy: { createdAt: "desc" } });
+app.get("/blog", async (req, res) => {
+  const { page, limit, skip } = paginate(req.query);
+  const [dbBlogs, total] = await Promise.all([
+    prismaClient.blog.findMany({ where: { isPublished: true }, orderBy: { createdAt: "desc" }, skip, take: limit }),
+    prismaClient.blog.count({ where: { isPublished: true } }),
+  ]);
   const list = dbBlogs.length ? dbBlogs.map(b => ({ ...b, image: b.imageUrl, date: new Date(b.createdAt).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" }) })) : blogs;
+  const pagination = paginationMeta(total || list.length, page, limit);
   res.locals.activeNav = "blog";
-  renderPage(res, "pages/blog", { pageTitle: "ব্লগ", blogs: list, count: list.length });
+  renderPage(res, "pages/blog", { pageTitle: "ব্লগ", blogs: list, count: pagination.total, pagination });
 });
 
 app.get("/blog/:slug", async (req, res) => {
@@ -403,24 +446,29 @@ app.get("/admin/courses", requireAdminSession, async (req, res) => {
 });
 
 app.get("/admin/users", requireAdminSession, async (req, res) => {
-  const users = await prismaClient.user.findMany({
-    orderBy: { createdAt: "desc" },
-    select: { id: true, name: true, email: true, role: true, createdAt: true, _count: { select: { enrollments: true, orders: true } } },
-  });
-  res.render("admin/users", {
-    pageTitle: "Users",
-    adminNav: "users",
-    authUser: req.session.user,
-    users,
-  });
+  const { page, limit, skip } = paginate(req.query);
+  const [users, total] = await Promise.all([
+    prismaClient.user.findMany({
+      orderBy: { createdAt: "desc" }, skip, take: limit,
+      select: { id: true, name: true, email: true, role: true, createdAt: true, _count: { select: { enrollments: true, orders: true } } },
+    }),
+    prismaClient.user.count(),
+  ]);
+  const pagination = paginationMeta(total, page, limit);
+  res.render("admin/users", { pageTitle: "Users", adminNav: "users", authUser: req.session.user, users, pagination });
 });
 
 app.get("/admin/orders", requireAdminSession, async (req, res) => {
-  const orders = await prismaClient.order.findMany({
-    orderBy: { createdAt: "desc" },
-    include: { user: { select: { name: true, email: true } }, items: true },
-  });
-  res.render("admin/orders", { pageTitle: "Orders", adminNav: "orders", authUser: req.session.user, orders });
+  const { page, limit, skip } = paginate(req.query);
+  const [orders, total] = await Promise.all([
+    prismaClient.order.findMany({
+      orderBy: { createdAt: "desc" }, skip, take: limit,
+      include: { user: { select: { name: true, email: true } }, items: true },
+    }),
+    prismaClient.order.count(),
+  ]);
+  const pagination = paginationMeta(total, page, limit);
+  res.render("admin/orders", { pageTitle: "Orders", adminNav: "orders", authUser: req.session.user, orders, pagination });
 });
 
 app.get("/admin/bundles", requireAdminSession, async (req, res) => {
@@ -598,3 +646,7 @@ app.get("/checkout", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`CrackNcode Academy → http://localhost:${PORT}`);
 });
+
+// ── 404 + Error Handler (must be last) ────────────────────────
+app.use(notFound);
+app.use(errorHandler);

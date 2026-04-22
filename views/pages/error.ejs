@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="bn" class="scroll-smooth">
+<head><%- include('../partials/head') %></head>
+<body class="min-h-screen bg-[#000b1a] font-display text-slate-200 antialiased">
+  <%- include('../partials/navbar') %>
+  <main class="flex min-h-[calc(100vh-80px)] items-center justify-center px-4">
+    <div class="text-center">
+      <p class="text-8xl font-black text-[#00a2ff]/20"><%= status %></p>
+      <h1 class="mt-4 text-2xl font-bold text-white"><%= message %></h1>
+      <p class="mt-2 text-slate-400">কিছু একটা সমস্যা হয়েছে।</p>
+      <div class="mt-8 flex justify-center gap-3">
+        <a href="/" class="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-6 py-3 text-sm font-bold text-white">হোমে যান</a>
+        <a href="javascript:history.back()" class="rounded-xl border border-white/10 px-6 py-3 text-sm text-slate-300 hover:bg-white/5">ফিরে যান</a>
+      </div>
+    </div>
+  </main>
+  <%- include('../partials/scripts') %>
+</body>
+</html>
