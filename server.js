@@ -643,10 +643,15 @@ app.get("/checkout", async (req, res) => {
   renderPage(res, "pages/checkout", { pageTitle: "চেকআউট", product, discount, discountPct });
 });
 
-app.listen(PORT, () => {
-  console.log(`CrackNcode Academy → http://localhost:${PORT}`);
-});
-
 // ── 404 + Error Handler (must be last) ────────────────────────
 app.use(notFound);
 app.use(errorHandler);
+
+// Export for Vercel serverless, listen for local dev
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`CrackNcode Academy → http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
