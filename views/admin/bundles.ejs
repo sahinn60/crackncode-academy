@@ -1,17 +1,8 @@
 <%
-function modalInputs(prefix) {
-  return `
-    <input id="${prefix}Title" placeholder="Title *" required class="col-span-2 rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none" />
-    <input id="${prefix}Price" type="number" placeholder="Price *" required class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none" />
-    <input id="${prefix}OldPrice" type="number" placeholder="Old Price" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none" />
-    <input id="${prefix}ImageUrl" placeholder="Image URL" class="col-span-2 rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none" />`;
-}
-
 var body = `
 <div class="mb-5 flex items-center justify-between">
   <p class="text-sm text-slate-400">${items.length} bundles</p>
-  <button onclick="document.getElementById('addModal').classList.remove('hidden')"
-    class="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-sm font-semibold text-white">+ Add Bundle</button>
+  <button onclick="openAdd()" class="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-sm font-semibold text-white">+ Add Bundle</button>
 </div>
 
 <div class="rounded-2xl border border-white/10 bg-[#0a1428] overflow-hidden">
@@ -24,83 +15,77 @@ var body = `
         <th class="px-5 py-3 text-left">Actions</th>
       </tr></thead>
       <tbody>
-        ${items.map(i => `
+        ${items.map(i=>`
         <tr class="border-b border-white/5 hover:bg-white/5" id="row-${i.id}">
           <td class="px-5 py-3">
             <div class="flex items-center gap-3">
-              ${i.imageUrl ? `<img src="${i.imageUrl}" class="h-10 w-16 rounded-lg object-cover shrink-0"/>` : '<div class="h-10 w-16 rounded-lg bg-white/10 shrink-0"></div>'}
+              ${i.imageUrl?`<img src="${i.imageUrl}" class="h-10 w-16 rounded-lg object-cover shrink-0"/>`:'<div class="h-10 w-16 rounded-lg bg-white/10 shrink-0"></div>'}
               <p class="font-medium text-white">${i.title}</p>
             </div>
           </td>
           <td class="px-5 py-3 text-white">৳ ${i.price.toLocaleString()}</td>
           <td class="px-5 py-3">
-            <button onclick="toggleStatus('${i.id}', ${i.isPublished}, 'bundles')"
-              class="rounded-full px-2.5 py-0.5 text-xs font-semibold ${i.isPublished ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-500/20 text-slate-400'}">
-              ${i.isPublished ? 'Published' : 'Draft'}
+            <button onclick="toggleStatus('${i.id}',${i.isPublished},'bundles')"
+              class="rounded-full px-2.5 py-0.5 text-xs font-semibold ${i.isPublished?'bg-emerald-500/20 text-emerald-400':'bg-slate-500/20 text-slate-400'}">
+              ${i.isPublished?'Published':'Draft'}
             </button>
           </td>
           <td class="px-5 py-3">
             <div class="flex gap-2">
               <button onclick='openEdit(${JSON.stringify(i).replace(/'/g,"\\'")})'
                 class="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-slate-300 hover:bg-white/5">Edit</button>
-              <button onclick="deleteItem('${i.id}', 'bundles')"
+              <button onclick="deleteItem('${i.id}','bundles')"
                 class="rounded-lg border border-red-500/30 px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10">Delete</button>
             </div>
           </td>
         </tr>`).join('')}
-        ${items.length === 0 ? '<tr><td colspan="4" class="px-5 py-10 text-center text-slate-500">No bundles yet.</td></tr>' : ''}
+        ${items.length===0?'<tr><td colspan="4" class="px-5 py-10 text-center text-slate-500">No bundles yet.</td></tr>':''}
       </tbody>
     </table>
   </div>
 </div>
 
-<!-- Add Modal -->
-<div id="addModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-  <div class="w-full max-w-md rounded-2xl border border-white/10 bg-[#0a1428] p-6">
-    <h2 class="mb-4 text-lg font-semibold text-white">Add Bundle</h2>
-    <div id="addMsg" class="hidden mb-3 rounded-lg px-4 py-2 text-sm"></div>
-    <form id="addForm" class="grid grid-cols-2 gap-3">
-      <input id="addTitle" placeholder="Title *" required class="col-span-2 rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
-      <input id="addPrice" type="number" placeholder="Price *" required class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
-      <input id="addOldPrice" type="number" placeholder="Old Price" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
-      <input id="addImageUrl" placeholder="Image URL" class="col-span-2 rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
-      <div class="col-span-2 flex justify-end gap-2 pt-1">
-        <button type="button" onclick="document.getElementById('addModal').classList.add('hidden')"
-          class="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-300">Cancel</button>
-        <button type="submit" class="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-sm font-semibold text-white">Create</button>
+<!-- Modal -->
+<div id="modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 overflow-y-auto">
+  <div class="w-full max-w-md rounded-2xl border border-white/10 bg-[#0a1428] p-6 my-4">
+    <h2 id="modalTitle" class="mb-4 text-lg font-semibold text-white">Add Bundle</h2>
+    <div id="modalMsg" class="hidden mb-3 rounded-lg px-4 py-2 text-sm"></div>
+    <form id="modalForm" class="space-y-3">
+      <input id="fId" type="hidden"/>
+      <input id="fTitle" placeholder="Title *" required class="w-full rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
+      <div class="grid grid-cols-2 gap-3">
+        <input id="fPrice" type="number" placeholder="Price *" required class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
+        <input id="fOldPrice" type="number" placeholder="Old Price" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
       </div>
-    </form>
-  </div>
-</div>
-
-<!-- Edit Modal -->
-<div id="editModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-  <div class="w-full max-w-md rounded-2xl border border-white/10 bg-[#0a1428] p-6">
-    <h2 class="mb-4 text-lg font-semibold text-white">Edit Bundle</h2>
-    <div id="editMsg" class="hidden mb-3 rounded-lg px-4 py-2 text-sm"></div>
-    <form id="editForm" class="grid grid-cols-2 gap-3">
-      <input id="editId" type="hidden"/>
-      <input id="editTitle" placeholder="Title *" required class="col-span-2 rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
-      <input id="editPrice" type="number" placeholder="Price *" required class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
-      <input id="editOldPrice" type="number" placeholder="Old Price" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
-      <input id="editImageUrl" placeholder="Image URL" class="col-span-2 rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
-      <div class="col-span-2 flex justify-end gap-2 pt-1">
-        <button type="button" onclick="document.getElementById('editModal').classList.add('hidden')"
-          class="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-300">Cancel</button>
-        <button type="submit" class="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-sm font-semibold text-white">Save</button>
+      <div>
+        <label class="block text-xs text-slate-400 mb-1.5">Image</label>
+        <div id="imgPreviewWrap" class="hidden mb-2"><img id="imgPreview" src="" class="h-28 w-full rounded-xl object-cover border border-white/10"/></div>
+        <label class="flex cursor-pointer items-center gap-2 rounded-xl border-2 border-dashed border-white/20 bg-[#000b1a] px-4 py-5 text-sm text-slate-400 hover:border-sky/50 hover:text-sky transition">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          <span id="uploadLabel">Click to upload image</span>
+          <input id="fImage" type="file" accept="image/*" class="hidden" onchange="previewImage(this)"/>
+        </label>
+        <input id="fImageUrl" type="hidden"/>
+      </div>
+      <div class="flex justify-end gap-2 pt-1">
+        <button type="button" onclick="closeModal()" class="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-300">Cancel</button>
+        <button type="submit" id="submitBtn" class="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-sm font-semibold text-white">Save</button>
       </div>
     </form>
   </div>
 </div>
 
 <script>
-  var token = localStorage.getItem('cnc_token');
-  function showMsg(id,t,e){var el=document.getElementById(id);el.textContent=t;el.className='mb-3 rounded-lg px-4 py-2 text-sm '+(e?'bg-red-500/20 text-red-400':'bg-green-500/20 text-green-400');el.classList.remove('hidden');}
-  function openEdit(i){document.getElementById('editId').value=i.id;document.getElementById('editTitle').value=i.title||'';document.getElementById('editPrice').value=i.price||'';document.getElementById('editOldPrice').value=i.oldPrice||'';document.getElementById('editImageUrl').value=i.imageUrl||'';document.getElementById('editModal').classList.remove('hidden');}
+  var token=localStorage.getItem('cnc_token'), isEdit=false;
+  function showMsg(t,e){var el=document.getElementById('modalMsg');el.textContent=t;el.className='mb-3 rounded-lg px-4 py-2 text-sm '+(e?'bg-red-500/20 text-red-400':'bg-green-500/20 text-green-400');el.classList.remove('hidden');}
+  function closeModal(){document.getElementById('modal').classList.add('hidden');document.getElementById('modalMsg').classList.add('hidden');document.getElementById('imgPreviewWrap').classList.add('hidden');document.getElementById('fImage').value='';document.getElementById('fImageUrl').value='';document.getElementById('uploadLabel').textContent='Click to upload image';}
+  function openAdd(){isEdit=false;document.getElementById('modalTitle').textContent='Add Bundle';document.getElementById('submitBtn').textContent='Create';['fId','fTitle','fPrice','fOldPrice','fImageUrl'].forEach(id=>document.getElementById(id).value='');document.getElementById('modal').classList.remove('hidden');}
+  function openEdit(i){isEdit=true;document.getElementById('modalTitle').textContent='Edit Bundle';document.getElementById('submitBtn').textContent='Save';document.getElementById('fId').value=i.id;document.getElementById('fTitle').value=i.title||'';document.getElementById('fPrice').value=i.price||'';document.getElementById('fOldPrice').value=i.oldPrice||'';document.getElementById('fImageUrl').value=i.imageUrl||'';if(i.imageUrl){document.getElementById('imgPreview').src=i.imageUrl;document.getElementById('imgPreviewWrap').classList.remove('hidden');document.getElementById('uploadLabel').textContent='Click to change image';}document.getElementById('modal').classList.remove('hidden');}
+  function previewImage(input){if(!input.files||!input.files[0])return;var r=new FileReader();r.onload=function(e){document.getElementById('imgPreview').src=e.target.result;document.getElementById('imgPreviewWrap').classList.remove('hidden');document.getElementById('uploadLabel').textContent=input.files[0].name;};r.readAsDataURL(input.files[0]);}
+  async function uploadImage(file){var fd=new FormData();fd.append('image',file);var r=await fetch('/api/admin/upload',{method:'POST',headers:{'Authorization':'Bearer '+token},body:fd});var d=await r.json();if(!r.ok)throw new Error(d.error||'Upload failed');return d.url;}
   async function toggleStatus(id,cur,type){await fetch('/api/admin/'+type+'/'+id,{method:'PATCH',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({isPublished:!cur})});location.reload();}
   async function deleteItem(id,type){if(!confirm('Delete?'))return;var r=await fetch('/api/admin/'+type+'/'+id,{method:'DELETE',headers:{'Authorization':'Bearer '+token}});if(r.ok)document.getElementById('row-'+id).remove();}
-  document.getElementById('addForm').addEventListener('submit',async function(e){e.preventDefault();var r=await fetch('/api/admin/bundles',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({title:document.getElementById('addTitle').value,price:document.getElementById('addPrice').value,oldPrice:document.getElementById('addOldPrice').value,imageUrl:document.getElementById('addImageUrl').value})});var d=await r.json();if(!r.ok)return showMsg('addMsg',d.error||'Failed',true);showMsg('addMsg','Created!',false);setTimeout(()=>location.reload(),700);});
-  document.getElementById('editForm').addEventListener('submit',async function(e){e.preventDefault();var id=document.getElementById('editId').value;var r=await fetch('/api/admin/bundles/'+id,{method:'PATCH',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({title:document.getElementById('editTitle').value,price:document.getElementById('editPrice').value,oldPrice:document.getElementById('editOldPrice').value,imageUrl:document.getElementById('editImageUrl').value})});var d=await r.json();if(!r.ok)return showMsg('editMsg',d.error||'Failed',true);showMsg('editMsg','Saved!',false);setTimeout(()=>location.reload(),700);});
+  document.getElementById('modalForm').addEventListener('submit',async function(e){e.preventDefault();var btn=document.getElementById('submitBtn');btn.disabled=true;btn.textContent='Saving...';try{var file=document.getElementById('fImage').files[0];var imageUrl=document.getElementById('fImageUrl').value;if(file)imageUrl=await uploadImage(file);var body={title:document.getElementById('fTitle').value,price:document.getElementById('fPrice').value,oldPrice:document.getElementById('fOldPrice').value,imageUrl};var id=document.getElementById('fId').value;var r=await fetch('/api/admin/bundles'+(isEdit?'/'+id:''),{method:isEdit?'PATCH':'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify(body)});var d=await r.json();if(!r.ok)return showMsg(d.error||'Failed',true);showMsg(isEdit?'Saved!':'Created!',false);setTimeout(()=>location.reload(),700);}catch(err){showMsg(err.message||'Error',true);}finally{btn.disabled=false;btn.textContent=isEdit?'Save':'Create';}});
 </script>`;
 %>
 <%- include('layout', { pageTitle, authUser, adminNav, body }) %>

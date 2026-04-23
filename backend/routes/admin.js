@@ -1,8 +1,16 @@
 const router = require("express").Router();
 const prisma = require("../lib/prisma");
 const { authenticate, requireAdmin } = require("../middleware/auth");
+const upload = require("../middleware/upload");
 
 router.use(authenticate, requireAdmin);
+
+// ── Image Upload ─────────────────────────────────────────────
+router.post("/upload", upload.single("image"), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+  const url = "/uploads/" + req.file.filename;
+  res.json({ url });
+});
 
 // ── Courses ──────────────────────────────────────────────
 

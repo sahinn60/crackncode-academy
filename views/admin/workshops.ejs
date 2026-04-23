@@ -2,8 +2,7 @@
 var body = `
 <div class="mb-5 flex items-center justify-between">
   <p class="text-sm text-slate-400">${items.length} workshops</p>
-  <button onclick="document.getElementById('addModal').classList.remove('hidden')"
-    class="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-sm font-semibold text-white">+ Add Workshop</button>
+  <button onclick="openAdd()" class="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-sm font-semibold text-white">+ Add Workshop</button>
 </div>
 
 <div class="rounded-2xl border border-white/10 bg-[#0a1428] overflow-hidden">
@@ -12,20 +11,18 @@ var body = `
       <thead><tr class="border-b border-white/10 text-xs text-slate-500">
         <th class="px-5 py-3 text-left">Workshop</th>
         <th class="px-5 py-3 text-left">Category</th>
-        <th class="px-5 py-3 text-left">Type</th>
         <th class="px-5 py-3 text-left">Price</th>
         <th class="px-5 py-3 text-left">Status</th>
         <th class="px-5 py-3 text-left">Actions</th>
       </tr></thead>
       <tbody>
-        ${items.map(i => `
+        ${items.map(i=>`
         <tr class="border-b border-white/5 hover:bg-white/5" id="row-${i.id}">
           <td class="px-5 py-3">
             <p class="font-medium text-white">${i.title}</p>
             <p class="text-xs text-slate-500">${i.slug}</p>
           </td>
           <td class="px-5 py-3 text-slate-400">${i.category||'—'}</td>
-          <td class="px-5 py-3 text-slate-400">${i.wType||'—'}</td>
           <td class="px-5 py-3 text-white">৳ ${i.price.toLocaleString()}</td>
           <td class="px-5 py-3">
             <button onclick="toggleStatus('${i.id}',${i.isPublished},'workshops')"
@@ -42,66 +39,58 @@ var body = `
             </div>
           </td>
         </tr>`).join('')}
-        ${items.length===0?'<tr><td colspan="6" class="px-5 py-10 text-center text-slate-500">No workshops yet.</td></tr>':''}
+        ${items.length===0?'<tr><td colspan="5" class="px-5 py-10 text-center text-slate-500">No workshops yet.</td></tr>':''}
       </tbody>
     </table>
   </div>
 </div>
 
-<!-- Add Modal -->
-<div id="addModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-  <div class="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0a1428] p-6">
-    <h2 class="mb-4 text-lg font-semibold text-white">Add Workshop</h2>
-    <div id="addMsg" class="hidden mb-3 rounded-lg px-4 py-2 text-sm"></div>
-    <form id="addForm" class="grid grid-cols-2 gap-3">
-      <input id="addSlug" placeholder="Slug *" required class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
-      <input id="addTitle" placeholder="Title *" required class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
-      <input id="addPrice" type="number" placeholder="Price *" required class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
-      <input id="addOldPrice" type="number" placeholder="Old Price" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
-      <input id="addCategory" placeholder="Category" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
-      <input id="addWType" placeholder="Type (Live/Pre-Recorded)" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
-      <input id="addDuration" placeholder="Duration" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
-      <input id="addImageUrl" placeholder="Image URL" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
-      <textarea id="addDesc" placeholder="Description" rows="2" class="col-span-2 rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none resize-none"></textarea>
-      <div class="col-span-2 flex justify-end gap-2 pt-1">
-        <button type="button" onclick="document.getElementById('addModal').classList.add('hidden')" class="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-300">Cancel</button>
-        <button type="submit" class="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-sm font-semibold text-white">Create</button>
+<!-- Modal -->
+<div id="modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 overflow-y-auto">
+  <div class="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0a1428] p-6 my-4">
+    <h2 id="modalTitle" class="mb-4 text-lg font-semibold text-white">Add Workshop</h2>
+    <div id="modalMsg" class="hidden mb-3 rounded-lg px-4 py-2 text-sm"></div>
+    <form id="modalForm" class="space-y-3">
+      <input id="fId" type="hidden"/>
+      <div class="grid grid-cols-2 gap-3">
+        <input id="fSlug" placeholder="Slug *" required class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
+        <input id="fTitle" placeholder="Title *" required class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
+        <input id="fPrice" type="number" placeholder="Price *" required class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
+        <input id="fOldPrice" type="number" placeholder="Old Price" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
+        <input id="fCategory" placeholder="Category" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
+        <input id="fWType" placeholder="Type (Live/Pre-Recorded)" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
+        <input id="fDuration" placeholder="Duration" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
+        <textarea id="fDesc" placeholder="Description" rows="2" class="col-span-2 rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none resize-none"></textarea>
       </div>
-    </form>
-  </div>
-</div>
-
-<!-- Edit Modal -->
-<div id="editModal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-  <div class="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0a1428] p-6">
-    <h2 class="mb-4 text-lg font-semibold text-white">Edit Workshop</h2>
-    <div id="editMsg" class="hidden mb-3 rounded-lg px-4 py-2 text-sm"></div>
-    <form id="editForm" class="grid grid-cols-2 gap-3">
-      <input id="editId" type="hidden"/>
-      <input id="editTitle" placeholder="Title *" required class="col-span-2 rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
-      <input id="editPrice" type="number" placeholder="Price *" required class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
-      <input id="editOldPrice" type="number" placeholder="Old Price" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
-      <input id="editCategory" placeholder="Category" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
-      <input id="editWType" placeholder="Type" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
-      <input id="editDuration" placeholder="Duration" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
-      <input id="editImageUrl" placeholder="Image URL" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
-      <textarea id="editDesc" placeholder="Description" rows="2" class="col-span-2 rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none resize-none"></textarea>
-      <div class="col-span-2 flex justify-end gap-2 pt-1">
-        <button type="button" onclick="document.getElementById('editModal').classList.add('hidden')" class="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-300">Cancel</button>
-        <button type="submit" class="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-sm font-semibold text-white">Save</button>
+      <div>
+        <label class="block text-xs text-slate-400 mb-1.5">Image</label>
+        <div id="imgPreviewWrap" class="hidden mb-2"><img id="imgPreview" src="" class="h-28 w-full rounded-xl object-cover border border-white/10"/></div>
+        <label class="flex cursor-pointer items-center gap-2 rounded-xl border-2 border-dashed border-white/20 bg-[#000b1a] px-4 py-5 text-sm text-slate-400 hover:border-sky/50 hover:text-sky transition">
+          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          <span id="uploadLabel">Click to upload image</span>
+          <input id="fImage" type="file" accept="image/*" class="hidden" onchange="previewImage(this)"/>
+        </label>
+        <input id="fImageUrl" type="hidden"/>
+      </div>
+      <div class="flex justify-end gap-2 pt-1">
+        <button type="button" onclick="closeModal()" class="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-300">Cancel</button>
+        <button type="submit" id="submitBtn" class="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-sm font-semibold text-white">Save</button>
       </div>
     </form>
   </div>
 </div>
 
 <script>
-  var token=localStorage.getItem('cnc_token');
-  function showMsg(id,t,e){var el=document.getElementById(id);el.textContent=t;el.className='mb-3 rounded-lg px-4 py-2 text-sm '+(e?'bg-red-500/20 text-red-400':'bg-green-500/20 text-green-400');el.classList.remove('hidden');}
-  function openEdit(i){document.getElementById('editId').value=i.id;document.getElementById('editTitle').value=i.title||'';document.getElementById('editPrice').value=i.price||'';document.getElementById('editOldPrice').value=i.oldPrice||'';document.getElementById('editCategory').value=i.category||'';document.getElementById('editWType').value=i.wType||'';document.getElementById('editDuration').value=i.duration||'';document.getElementById('editImageUrl').value=i.imageUrl||'';document.getElementById('editDesc').value=i.description||'';document.getElementById('editModal').classList.remove('hidden');}
+  var token=localStorage.getItem('cnc_token'),isEdit=false;
+  function showMsg(t,e){var el=document.getElementById('modalMsg');el.textContent=t;el.className='mb-3 rounded-lg px-4 py-2 text-sm '+(e?'bg-red-500/20 text-red-400':'bg-green-500/20 text-green-400');el.classList.remove('hidden');}
+  function closeModal(){document.getElementById('modal').classList.add('hidden');document.getElementById('modalMsg').classList.add('hidden');document.getElementById('imgPreviewWrap').classList.add('hidden');document.getElementById('fImage').value='';document.getElementById('fImageUrl').value='';document.getElementById('uploadLabel').textContent='Click to upload image';}
+  function openAdd(){isEdit=false;document.getElementById('modalTitle').textContent='Add Workshop';document.getElementById('submitBtn').textContent='Create';['fId','fSlug','fTitle','fPrice','fOldPrice','fCategory','fWType','fDuration','fDesc','fImageUrl'].forEach(id=>document.getElementById(id).value='');document.getElementById('fSlug').disabled=false;document.getElementById('modal').classList.remove('hidden');}
+  function openEdit(i){isEdit=true;document.getElementById('modalTitle').textContent='Edit Workshop';document.getElementById('submitBtn').textContent='Save';document.getElementById('fId').value=i.id;document.getElementById('fSlug').value=i.slug||'';document.getElementById('fSlug').disabled=true;document.getElementById('fTitle').value=i.title||'';document.getElementById('fPrice').value=i.price||'';document.getElementById('fOldPrice').value=i.oldPrice||'';document.getElementById('fCategory').value=i.category||'';document.getElementById('fWType').value=i.wType||'';document.getElementById('fDuration').value=i.duration||'';document.getElementById('fDesc').value=i.description||'';document.getElementById('fImageUrl').value=i.imageUrl||'';if(i.imageUrl){document.getElementById('imgPreview').src=i.imageUrl;document.getElementById('imgPreviewWrap').classList.remove('hidden');document.getElementById('uploadLabel').textContent='Click to change image';}document.getElementById('modal').classList.remove('hidden');}
+  function previewImage(input){if(!input.files||!input.files[0])return;var r=new FileReader();r.onload=function(e){document.getElementById('imgPreview').src=e.target.result;document.getElementById('imgPreviewWrap').classList.remove('hidden');document.getElementById('uploadLabel').textContent=input.files[0].name;};r.readAsDataURL(input.files[0]);}
+  async function uploadImage(file){var fd=new FormData();fd.append('image',file);var r=await fetch('/api/admin/upload',{method:'POST',headers:{'Authorization':'Bearer '+token},body:fd});var d=await r.json();if(!r.ok)throw new Error(d.error||'Upload failed');return d.url;}
   async function toggleStatus(id,cur,type){await fetch('/api/admin/'+type+'/'+id,{method:'PATCH',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({isPublished:!cur})});location.reload();}
   async function deleteItem(id,type){if(!confirm('Delete?'))return;var r=await fetch('/api/admin/'+type+'/'+id,{method:'DELETE',headers:{'Authorization':'Bearer '+token}});if(r.ok)document.getElementById('row-'+id).remove();}
-  document.getElementById('addForm').addEventListener('submit',async function(e){e.preventDefault();var r=await fetch('/api/admin/workshops',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({slug:document.getElementById('addSlug').value,title:document.getElementById('addTitle').value,price:document.getElementById('addPrice').value,oldPrice:document.getElementById('addOldPrice').value,category:document.getElementById('addCategory').value,wType:document.getElementById('addWType').value,duration:document.getElementById('addDuration').value,imageUrl:document.getElementById('addImageUrl').value,description:document.getElementById('addDesc').value})});var d=await r.json();if(!r.ok)return showMsg('addMsg',d.error||'Failed',true);showMsg('addMsg','Created!',false);setTimeout(()=>location.reload(),700);});
-  document.getElementById('editForm').addEventListener('submit',async function(e){e.preventDefault();var id=document.getElementById('editId').value;var r=await fetch('/api/admin/workshops/'+id,{method:'PATCH',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({title:document.getElementById('editTitle').value,price:document.getElementById('editPrice').value,oldPrice:document.getElementById('editOldPrice').value,category:document.getElementById('editCategory').value,wType:document.getElementById('editWType').value,duration:document.getElementById('editDuration').value,imageUrl:document.getElementById('editImageUrl').value,description:document.getElementById('editDesc').value})});var d=await r.json();if(!r.ok)return showMsg('editMsg',d.error||'Failed',true);showMsg('editMsg','Saved!',false);setTimeout(()=>location.reload(),700);});
+  document.getElementById('modalForm').addEventListener('submit',async function(e){e.preventDefault();var btn=document.getElementById('submitBtn');btn.disabled=true;btn.textContent='Saving...';try{var file=document.getElementById('fImage').files[0];var imageUrl=document.getElementById('fImageUrl').value;if(file)imageUrl=await uploadImage(file);var body={slug:document.getElementById('fSlug').value,title:document.getElementById('fTitle').value,price:document.getElementById('fPrice').value,oldPrice:document.getElementById('fOldPrice').value,category:document.getElementById('fCategory').value,wType:document.getElementById('fWType').value,duration:document.getElementById('fDuration').value,description:document.getElementById('fDesc').value,imageUrl};var id=document.getElementById('fId').value;var r=await fetch('/api/admin/workshops'+(isEdit?'/'+id:''),{method:isEdit?'PATCH':'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify(body)});var d=await r.json();if(!r.ok)return showMsg(d.error||'Failed',true);showMsg(isEdit?'Saved!':'Created!',false);setTimeout(()=>location.reload(),700);}catch(err){showMsg(err.message||'Error',true);}finally{btn.disabled=false;btn.textContent=isEdit?'Save':'Create';}});
 </script>`;
 %>
 <%- include('layout', { pageTitle, authUser, adminNav, body }) %>
