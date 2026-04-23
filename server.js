@@ -152,19 +152,22 @@ function renderPage(res, view, data) {
 
 app.get("/", async (_req, res) => {
   res.locals.activeNav = "home";
-  const [dbCourses, dbBundles, dbEbooks] = await Promise.all([
+  const [dbCourses, dbBundles, dbEbooks, topSellingCourses] = await Promise.all([
     prismaClient.course.findMany({ where: { isPublished: true }, orderBy: { createdAt: "desc" }, take: 10 }),
     prismaClient.bundle.findMany({ where: { isPublished: true }, orderBy: { createdAt: "desc" } }),
     prismaClient.ebook.findMany({ where: { isPublished: true }, orderBy: { createdAt: "desc" } }),
+    prismaClient.course.findMany({ where: { isPublished: true, isTopSelling: true }, orderBy: { createdAt: "desc" } }),
   ]);
-  // fallback to catalog if DB is empty
   const allCourses = dbCourses.length ? dbCourses.map(c => ({ ...c, image: c.imageUrl, discountPct: c.oldPrice ? Math.round((1 - c.price / c.oldPrice) * 100) : 0 })) : courses;
   const allBundles = dbBundles.length ? dbBundles.map(b => ({ ...b, image: b.imageUrl, old: b.oldPrice })) : bundles;
   const allEbooks  = dbEbooks.length  ? dbEbooks.map(e => ({ ...e, cover: e.coverUrl, old: e.oldPrice })) : ebooks;
-  const featured = allCourses[1] || allCourses[0];
+  const topList = topSellingCourses.length
+    ? topSellingCourses.map(c => ({ ...c, image: c.imageUrl, discountPct: c.oldPrice ? Math.round((1 - c.price / c.oldPrice) * 100) : 0 }))
+    : allCourses;
+  const featured = topList[0] || allCourses[0];
   const dynamicTopSelling = {
-    featured: { title: featured.title, desc: featured.description || featured.desc || "", price: featured.price, oldPrice: featured.oldPrice || featured.oldPrice, image: featured.image || featured.imageUrl, badge: featured.courseType || "Pre-Recorded", slug: featured.slug },
-    side: allCourses.slice(2, 4).map(c => ({ title: c.title, price: c.price, oldPrice: c.oldPrice, image: c.image || c.imageUrl, slug: c.slug })),
+    featured: { title: featured.title, desc: featured.description || featured.desc || "", price: featured.price, oldPrice: featured.oldPrice, image: featured.image || featured.imageUrl, badge: featured.courseType || "Pre-Recorded", slug: featured.slug },
+    side: topList.slice(1, 3).map(c => ({ title: c.title, price: c.price, oldPrice: c.oldPrice, image: c.image || c.imageUrl, slug: c.slug })),
   };
   renderPage(res, "index", {
     pageTitle: "হোম",
@@ -437,12 +440,12 @@ app.get("/admin", requireAdminSession, async (req, res) => {
 
 app.get("/admin/courses", requireAdminSession, async (req, res) => {
   const courses = await prismaClient.course.findMany({ orderBy: { createdAt: "desc" } });
-  res.render("admin/courses", {
-    pageTitle: "Courses",
-    adminNav: "courses",
-    authUser: req.session.user,
-    courses,
-  });
+  res.render("admin/courses", { pageTitle: "Courses", adminNav: "courses", authUser: req.session.user, courses });
+});
+
+app.get("/admin/topselling", requireAdminSession, async (req, res) => {
+  const courses = await prismaClient.course.findMany({ orderBy: { createdAt: "desc" } });
+  res.render("admin/topselling", { pageTitle: "Top Selling Courses", adminNav: "topselling", authUser: req.session.user, courses });
 });
 
 app.get("/admin/users", requireAdminSession, async (req, res) => {

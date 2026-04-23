@@ -1,0 +1,52 @@
+<%
+var rows = '';
+courses.forEach(function(c) {
+  var checked = c.isTopSelling ? 'checked' : '';
+  var badge = c.isTopSelling
+    ? '<span class="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-semibold text-amber-400">Top Selling</span>'
+    : '<span class="rounded-full bg-slate-500/20 px-2 py-0.5 text-xs text-slate-500">Normal</span>';
+  var img = c.imageUrl
+    ? '<img src="' + c.imageUrl + '" class="h-10 w-14 rounded-lg object-cover shrink-0"/>'
+    : '<div class="h-10 w-14 rounded-lg bg-white/10 shrink-0"></div>';
+  rows += '<tr class="border-b border-white/5 hover:bg-white/5" id="row-' + c.id + '">'
+    + '<td class="px-5 py-3"><div class="flex items-center gap-3">' + img
+    + '<div><p class="font-medium text-white">' + c.title + '</p><p class="text-xs text-slate-500">' + c.slug + '</p></div></div></td>'
+    + '<td class="px-5 py-3 text-slate-400">' + (c.category||'—') + '</td>'
+    + '<td class="px-5 py-3 text-white">৳ ' + c.price.toLocaleString() + '</td>'
+    + '<td class="px-5 py-3">' + badge + '</td>'
+    + '<td class="px-5 py-3">'
+    + '<label class="relative inline-flex items-center cursor-pointer">'
+    + '<input type="checkbox" ' + checked + ' onchange="toggleTopSelling(\'' + c.id + '\', this.checked)" class="sr-only peer"/>'
+    + '<div class="w-11 h-6 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[\'\'] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>'
+    + '</label>'
+    + '</td></tr>';
+});
+if (courses.length === 0) rows = '<tr><td colspan="5" class="px-5 py-10 text-center text-slate-500">No courses yet.</td></tr>';
+
+var topCount = courses.filter(function(c){ return c.isTopSelling; }).length;
+
+var body = '<div class="mb-5">'
+  + '<p class="text-sm text-slate-400">' + courses.length + ' total courses — <span class="text-amber-400 font-semibold">' + topCount + ' marked as Top Selling</span></p>'
+  + '<p class="mt-1 text-xs text-slate-500">Toggle the switch to mark/unmark a course as Top Selling. Selected courses will appear on the homepage.</p>'
+  + '</div>'
+  + '<div class="rounded-2xl border border-white/10 bg-[#0a1428] overflow-hidden"><div class="overflow-x-auto"><table class="w-full text-sm">'
+  + '<thead><tr class="border-b border-white/10 text-xs text-slate-500">'
+  + '<th class="px-5 py-3 text-left">Course</th>'
+  + '<th class="px-5 py-3 text-left">Category</th>'
+  + '<th class="px-5 py-3 text-left">Price</th>'
+  + '<th class="px-5 py-3 text-left">Status</th>'
+  + '<th class="px-5 py-3 text-left">Top Selling</th>'
+  + '</tr></thead><tbody>' + rows + '</tbody></table></div></div>'
+  + '<script>'
+  + 'var token = localStorage.getItem("cnc_token");'
+  + 'async function toggleTopSelling(id, val) {'
+  + '  var r = await fetch("/api/admin/courses/" + id + "/topselling", {'
+  + '    method: "PATCH",'
+  + '    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + token },'
+  + '    body: JSON.stringify({ isTopSelling: val })'
+  + '  });'
+  + '  if (!r.ok) { alert("Failed to update"); location.reload(); }'
+  + '}'
+  + '<\/script>';
+%>
+<%- include('layout', { pageTitle, authUser, adminNav, body }) %>

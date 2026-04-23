@@ -1,15 +1,30 @@
 const router = require("express").Router();
 const prisma = require("../lib/prisma");
 const { authenticate, requireAdmin } = require("../middleware/auth");
-const upload = require("../middleware/upload");
+const { upload, uploadDoc } = require("../middleware/upload");
 
 router.use(authenticate, requireAdmin);
 
 // ── Image Upload ─────────────────────────────────────────────
 router.post("/upload", upload.single("image"), (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded" });
-  const url = "/uploads/" + req.file.filename;
-  res.json({ url });
+  res.json({ url: "/uploads/" + req.file.filename });
+});
+
+// ── Document Upload ─────────────────────────────────────────
+router.post("/upload-doc", uploadDoc.single("file"), (req, res) => {
+  if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+  res.json({ url: "/uploads/" + req.file.filename, name: req.file.originalname });
+});
+
+// ── Top Selling ─────────────────────────────────────────────
+router.patch("/courses/:id/topselling", async (req, res) => {
+  const { isTopSelling } = req.body;
+  const course = await prisma.course.update({
+    where: { id: req.params.id },
+    data: { isTopSelling: !!isTopSelling },
+  });
+  res.json(course);
 });
 
 // ── Courses ──────────────────────────────────────────────

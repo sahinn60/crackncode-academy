@@ -1,229 +1,78 @@
 <%
-var body = `
-<div class="mb-5 flex items-center justify-between">
-  <p class="text-sm text-slate-400">${courses.length} courses total</p>
-  <button onclick="openAdd()" class="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-sm font-semibold text-white hover:opacity-90">+ Add Course</button>
-</div>
+var courseRows = '';
+courses.forEach(function(c) {
+  var img = c.imageUrl
+    ? '<img src="' + c.imageUrl + '" class="h-10 w-14 rounded-lg object-cover shrink-0"/>'
+    : '<div class="h-10 w-14 rounded-lg bg-white/10 shrink-0"></div>';
+  var badge = c.isPublished
+    ? '<span class="rounded-full bg-emerald-500/20 px-2.5 py-0.5 text-xs font-semibold text-emerald-400">Published</span>'
+    : '<span class="rounded-full bg-slate-500/20 px-2.5 py-0.5 text-xs font-semibold text-slate-400">Draft</span>';
+  var safeTitle = (c.title||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,' ');
+  var safeCategory = (c.category||'').replace(/'/g,"\\'");
+  var safeLevel = (c.level||'').replace(/'/g,"\\'");
+  var safeDesc = (c.description||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/\n/g,' ');
+  var safeImg = (c.imageUrl||'').replace(/'/g,"\\'");
+  var safeSlug = (c.slug||'').replace(/'/g,"\\'");
+  courseRows += '<tr class="border-b border-white/5 hover:bg-white/5" id="row-' + c.id + '">'
+    + '<td class="px-5 py-3"><div class="flex items-center gap-3">' + img
+    + '<div><p class="font-medium text-white">' + c.title + '</p><p class="text-xs text-slate-500">' + c.slug + '</p></div></div></td>'
+    + '<td class="px-5 py-3 text-slate-400">' + (c.category||'—') + '</td>'
+    + '<td class="px-5 py-3 text-white">৳ ' + c.price.toLocaleString() + '</td>'
+    + '<td class="px-5 py-3"><button onclick="togglePublish(\'' + c.id + '\',' + c.isPublished + ')" class="rounded-full px-2.5 py-0.5 text-xs font-semibold ' + (c.isPublished ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-500/20 text-slate-400') + '">' + (c.isPublished ? 'Published' : 'Draft') + '</button></td>'
+    + '<td class="px-5 py-3"><div class="flex gap-2">'
+    + '<button onclick="openEdit(\'' + c.id + '\',\'' + safeSlug + '\',\'' + safeTitle + '\',' + c.price + ',' + (c.oldPrice||0) + ',\'' + safeCategory + '\',\'' + safeLevel + '\',\'' + safeDesc + '\',\'' + safeImg + '\')" class="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-slate-300 hover:bg-white/5">Edit</button>'
+    + '<button onclick="deleteCourse(\'' + c.id + '\')" class="rounded-lg border border-red-500/30 px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10">Delete</button>'
+    + '</div></td></tr>';
+});
+if (courses.length === 0) courseRows = '<tr><td colspan="5" class="px-5 py-10 text-center text-slate-500">No courses yet.</td></tr>';
 
-<div class="rounded-2xl border border-white/10 bg-[#0a1428] overflow-hidden">
-  <div class="overflow-x-auto">
-    <table class="w-full text-sm">
-      <thead><tr class="border-b border-white/10 text-xs text-slate-500">
-        <th class="px-5 py-3 text-left">Course</th>
-        <th class="px-5 py-3 text-left">Category</th>
-        <th class="px-5 py-3 text-left">Price</th>
-        <th class="px-5 py-3 text-left">Status</th>
-        <th class="px-5 py-3 text-left">Actions</th>
-      </tr></thead>
-      <tbody>
-        ${courses.map(c => \`
-        <tr class="border-b border-white/5 hover:bg-white/5" id="row-\${c.id}">
-          <td class="px-5 py-3">
-            <div class="flex items-center gap-3">
-              \${c.imageUrl ? \`<img src="\${c.imageUrl}" class="h-10 w-14 rounded-lg object-cover shrink-0"/>\` : '<div class="h-10 w-14 rounded-lg bg-white/10 shrink-0"></div>'}
-              <div>
-                <p class="font-medium text-white">\${c.title}</p>
-                <p class="text-xs text-slate-500">\${c.slug}</p>
-              </div>
-            </div>
-          </td>
-          <td class="px-5 py-3 text-slate-400">\${c.category || '—'}</td>
-          <td class="px-5 py-3 text-white">৳ \${c.price.toLocaleString()}</td>
-          <td class="px-5 py-3">
-            <button onclick="togglePublish('\${c.id}', \${c.isPublished})"
-              class="rounded-full px-2.5 py-0.5 text-xs font-semibold \${c.isPublished ? 'bg-emerald-500/20 text-emerald-400' : 'bg-slate-500/20 text-slate-400'}">
-              \${c.isPublished ? 'Published' : 'Draft'}
-            </button>
-          </td>
-          <td class="px-5 py-3">
-            <div class="flex gap-2">
-              <button onclick='openEdit(\${JSON.stringify(c).replace(/'/g, "\\\\'")})'
-                class="rounded-lg border border-white/10 px-3 py-1.5 text-xs text-slate-300 hover:bg-white/5">Edit</button>
-              <button onclick="deleteCourse('\${c.id}')"
-                class="rounded-lg border border-red-500/30 px-3 py-1.5 text-xs text-red-400 hover:bg-red-500/10">Delete</button>
-            </div>
-          </td>
-        </tr>\`).join('')}
-        ${courses.length === 0 ? '<tr><td colspan="5" class="px-5 py-10 text-center text-slate-500">No courses yet.</td></tr>' : ''}
-      </tbody>
-    </table>
-  </div>
-</div>
+var body = '<div class="mb-5 flex items-center justify-between">'
+  + '<p class="text-sm text-slate-400">' + courses.length + ' courses total</p>'
+  + '<button onclick="openAdd()" class="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-sm font-semibold text-white hover:opacity-90">+ Add Course</button>'
+  + '</div>'
+  + '<div class="rounded-2xl border border-white/10 bg-[#0a1428] overflow-hidden"><div class="overflow-x-auto"><table class="w-full text-sm">'
+  + '<thead><tr class="border-b border-white/10 text-xs text-slate-500">'
+  + '<th class="px-5 py-3 text-left">Course</th><th class="px-5 py-3 text-left">Category</th><th class="px-5 py-3 text-left">Price</th><th class="px-5 py-3 text-left">Status</th><th class="px-5 py-3 text-left">Actions</th>'
+  + '</tr></thead><tbody>' + courseRows + '</tbody></table></div></div>'
 
-<!-- Modal (shared for add & edit) -->
-<div id="modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 overflow-y-auto">
-  <div class="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0a1428] p-6 my-4">
-    <h2 id="modalTitle" class="mb-4 text-lg font-semibold text-white">Add Course</h2>
-    <div id="modalMsg" class="hidden mb-3 rounded-lg px-4 py-2 text-sm"></div>
-    <form id="modalForm" class="space-y-3">
-      <input id="fId" type="hidden"/>
-      <div class="grid grid-cols-2 gap-3">
-        <input id="fSlug" placeholder="Slug *" required class="col-span-2 rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
-        <input id="fTitle" placeholder="Title *" required class="col-span-2 rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
-        <input id="fPrice" type="number" placeholder="Price *" required class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
-        <input id="fOldPrice" type="number" placeholder="Old Price" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
-        <input id="fCategory" placeholder="Category" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
-        <input id="fLevel" placeholder="Level" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>
-        <textarea id="fDesc" placeholder="Description" rows="2" class="col-span-2 rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none resize-none"></textarea>
-      </div>
+  + '<div id="modal" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 overflow-y-auto">'
+  + '<div class="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0a1428] p-6 my-4">'
+  + '<h2 id="modalTitle" class="mb-4 text-lg font-semibold text-white">Add Course</h2>'
+  + '<div id="modalMsg" class="hidden mb-3 rounded-lg px-4 py-2 text-sm"></div>'
+  + '<form id="modalForm" class="space-y-3">'
+  + '<input id="fId" type="hidden"/>'
+  + '<div class="grid grid-cols-2 gap-3">'
+  + '<input id="fSlug" placeholder="Slug *" required class="col-span-2 rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>'
+  + '<input id="fTitle" placeholder="Title *" required class="col-span-2 rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>'
+  + '<input id="fPrice" type="number" placeholder="Price *" required class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>'
+  + '<input id="fOldPrice" type="number" placeholder="Old Price" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>'
+  + '<input id="fCategory" placeholder="Category" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>'
+  + '<input id="fLevel" placeholder="Level" class="rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none"/>'
+  + '<textarea id="fDesc" placeholder="Description" rows="2" class="col-span-2 rounded-xl border border-white/10 bg-[#000b1a] px-3 py-2.5 text-sm text-white focus:border-sky focus:outline-none resize-none"></textarea>'
+  + '</div>'
+  + '<div><label class="block text-xs text-slate-400 mb-1.5">Course Image</label>'
+  + '<div id="imgPreviewWrap" class="hidden mb-2"><img id="imgPreview" src="" class="h-32 w-full rounded-xl object-cover border border-white/10"/></div>'
+  + '<label class="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-white/20 bg-[#000b1a] px-4 py-6 text-sm text-slate-400 hover:border-sky/50 hover:text-sky transition">'
+  + '<svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>'
+  + '<span id="uploadLabel">Click to upload image (max 5MB)</span>'
+  + '<input id="fImage" type="file" accept="image/*" class="hidden" onchange="previewImage(this)"/>'
+  + '</label><input id="fImageUrl" type="hidden"/></div>'
+  + '<div class="flex justify-end gap-2 pt-1">'
+  + '<button type="button" onclick="closeModal()" class="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/5">Cancel</button>'
+  + '<button type="submit" id="submitBtn" class="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-sm font-semibold text-white">Save</button>'
+  + '</div></form></div></div>'
 
-      <!-- Image Upload -->
-      <div>
-        <label class="block text-xs text-slate-400 mb-1.5">Course Image</label>
-        <div id="imgPreviewWrap" class="hidden mb-2">
-          <img id="imgPreview" src="" class="h-32 w-full rounded-xl object-cover border border-white/10"/>
-        </div>
-        <label class="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-white/20 bg-[#000b1a] px-4 py-6 text-sm text-slate-400 hover:border-[#00a2ff]/50 hover:text-[#00a2ff] transition">
-          <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-          <span id="uploadLabel">Click to upload image (max 5MB)</span>
-          <input id="fImage" type="file" accept="image/*" class="hidden" onchange="previewImage(this)"/>
-        </label>
-        <input id="fImageUrl" type="hidden"/>
-      </div>
-
-      <div class="flex justify-end gap-2 pt-1">
-        <button type="button" onclick="closeModal()" class="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-300 hover:bg-white/5">Cancel</button>
-        <button type="submit" id="submitBtn" class="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-4 py-2 text-sm font-semibold text-white">Save</button>
-      </div>
-    </form>
-  </div>
-</div>
-
-<script>
-  var token = localStorage.getItem('cnc_token');
-  var isEdit = false;
-
-  function showMsg(t, e) {
-    var el = document.getElementById('modalMsg');
-    el.textContent = t;
-    el.className = 'mb-3 rounded-lg px-4 py-2 text-sm ' + (e ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400');
-    el.classList.remove('hidden');
-  }
-
-  function closeModal() {
-    document.getElementById('modal').classList.add('hidden');
-    document.getElementById('modalMsg').classList.add('hidden');
-    document.getElementById('imgPreviewWrap').classList.add('hidden');
-    document.getElementById('fImage').value = '';
-    document.getElementById('fImageUrl').value = '';
-    document.getElementById('uploadLabel').textContent = 'Click to upload image (max 5MB)';
-  }
-
-  function openAdd() {
-    isEdit = false;
-    document.getElementById('modalTitle').textContent = 'Add Course';
-    document.getElementById('submitBtn').textContent = 'Create';
-    ['fId','fSlug','fTitle','fPrice','fOldPrice','fCategory','fLevel','fDesc','fImageUrl'].forEach(id => {
-      var el = document.getElementById(id);
-      if (el) el.value = '';
-    });
-    document.getElementById('fSlug').disabled = false;
-    document.getElementById('modal').classList.remove('hidden');
-  }
-
-  function openEdit(c) {
-    isEdit = true;
-    document.getElementById('modalTitle').textContent = 'Edit Course';
-    document.getElementById('submitBtn').textContent = 'Save';
-    document.getElementById('fId').value = c.id;
-    document.getElementById('fSlug').value = c.slug || '';
-    document.getElementById('fSlug').disabled = true;
-    document.getElementById('fTitle').value = c.title || '';
-    document.getElementById('fPrice').value = c.price || '';
-    document.getElementById('fOldPrice').value = c.oldPrice || '';
-    document.getElementById('fCategory').value = c.category || '';
-    document.getElementById('fLevel').value = c.level || '';
-    document.getElementById('fDesc').value = c.description || '';
-    document.getElementById('fImageUrl').value = c.imageUrl || '';
-    if (c.imageUrl) {
-      document.getElementById('imgPreview').src = c.imageUrl;
-      document.getElementById('imgPreviewWrap').classList.remove('hidden');
-      document.getElementById('uploadLabel').textContent = 'Click to change image';
-    }
-    document.getElementById('modal').classList.remove('hidden');
-  }
-
-  function previewImage(input) {
-    if (!input.files || !input.files[0]) return;
-    var reader = new FileReader();
-    reader.onload = function(e) {
-      document.getElementById('imgPreview').src = e.target.result;
-      document.getElementById('imgPreviewWrap').classList.remove('hidden');
-      document.getElementById('uploadLabel').textContent = input.files[0].name;
-    };
-    reader.readAsDataURL(input.files[0]);
-  }
-
-  async function uploadImage(file) {
-    var fd = new FormData();
-    fd.append('image', file);
-    var r = await fetch('/api/admin/upload', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + token },
-      body: fd,
-    });
-    var d = await r.json();
-    if (!r.ok) throw new Error(d.error || 'Upload failed');
-    return d.url;
-  }
-
-  async function togglePublish(id, cur) {
-    var r = await fetch('/api/admin/courses/' + id, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ isPublished: !cur }),
-    });
-    if (r.ok) location.reload();
-  }
-
-  async function deleteCourse(id) {
-    if (!confirm('Delete this course?')) return;
-    var r = await fetch('/api/admin/courses/' + id, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + token } });
-    if (r.ok) document.getElementById('row-' + id).remove();
-  }
-
-  document.getElementById('modalForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    var btn = document.getElementById('submitBtn');
-    btn.disabled = true; btn.textContent = 'Saving...';
-
-    try {
-      // Upload image if selected
-      var imageFile = document.getElementById('fImage').files[0];
-      var imageUrl = document.getElementById('fImageUrl').value;
-      if (imageFile) imageUrl = await uploadImage(imageFile);
-
-      var body = {
-        slug: document.getElementById('fSlug').value,
-        title: document.getElementById('fTitle').value,
-        price: document.getElementById('fPrice').value,
-        oldPrice: document.getElementById('fOldPrice').value,
-        category: document.getElementById('fCategory').value,
-        level: document.getElementById('fLevel').value,
-        description: document.getElementById('fDesc').value,
-        imageUrl: imageUrl,
-      };
-
-      var id = document.getElementById('fId').value;
-      var url = isEdit ? '/api/admin/courses/' + id : '/api/admin/courses';
-      var method = isEdit ? 'PATCH' : 'POST';
-
-      var r = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-        body: JSON.stringify(body),
-      });
-      var d = await r.json();
-      if (!r.ok) return showMsg(d.error || 'Failed', true);
-      showMsg(isEdit ? 'Saved!' : 'Course created!', false);
-      setTimeout(() => location.reload(), 700);
-    } catch(err) {
-      showMsg(err.message || 'Error', true);
-    } finally {
-      btn.disabled = false;
-      btn.textContent = isEdit ? 'Save' : 'Create';
-    }
-  });
-</script>`;
+  + '<script>'
+  + 'var token=localStorage.getItem("cnc_token"),isEdit=false;'
+  + 'function showMsg(t,e){var el=document.getElementById("modalMsg");el.textContent=t;el.className="mb-3 rounded-lg px-4 py-2 text-sm "+(e?"bg-red-500/20 text-red-400":"bg-green-500/20 text-green-400");el.classList.remove("hidden");}'
+  + 'function closeModal(){document.getElementById("modal").classList.add("hidden");document.getElementById("modalMsg").classList.add("hidden");document.getElementById("imgPreviewWrap").classList.add("hidden");document.getElementById("fImage").value="";document.getElementById("fImageUrl").value="";document.getElementById("uploadLabel").textContent="Click to upload image (max 5MB)";}'
+  + 'function openAdd(){isEdit=false;document.getElementById("modalTitle").textContent="Add Course";document.getElementById("submitBtn").textContent="Create";["fId","fSlug","fTitle","fPrice","fOldPrice","fCategory","fLevel","fDesc","fImageUrl"].forEach(function(id){document.getElementById(id).value="";});document.getElementById("fSlug").disabled=false;document.getElementById("modal").classList.remove("hidden");}'
+  + 'function openEdit(id,slug,title,price,oldPrice,category,level,desc,imageUrl){isEdit=true;document.getElementById("modalTitle").textContent="Edit Course";document.getElementById("submitBtn").textContent="Save";document.getElementById("fId").value=id;document.getElementById("fSlug").value=slug;document.getElementById("fSlug").disabled=true;document.getElementById("fTitle").value=title;document.getElementById("fPrice").value=price;document.getElementById("fOldPrice").value=oldPrice||"";document.getElementById("fCategory").value=category;document.getElementById("fLevel").value=level;document.getElementById("fDesc").value=desc;document.getElementById("fImageUrl").value=imageUrl;if(imageUrl){document.getElementById("imgPreview").src=imageUrl;document.getElementById("imgPreviewWrap").classList.remove("hidden");document.getElementById("uploadLabel").textContent="Click to change image";}document.getElementById("modal").classList.remove("hidden");}'
+  + 'function previewImage(input){if(!input.files||!input.files[0])return;var r=new FileReader();r.onload=function(e){document.getElementById("imgPreview").src=e.target.result;document.getElementById("imgPreviewWrap").classList.remove("hidden");document.getElementById("uploadLabel").textContent=input.files[0].name;};r.readAsDataURL(input.files[0]);}'
+  + 'async function uploadImage(file){var fd=new FormData();fd.append("image",file);var r=await fetch("/api/admin/upload",{method:"POST",headers:{"Authorization":"Bearer "+token},body:fd});var d=await r.json();if(!r.ok)throw new Error(d.error||"Upload failed");return d.url;}'
+  + 'async function togglePublish(id,cur){var r=await fetch("/api/admin/courses/"+id,{method:"PATCH",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify({isPublished:!cur})});if(r.ok)location.reload();}'
+  + 'async function deleteCourse(id){if(!confirm("Delete this course?"))return;var r=await fetch("/api/admin/courses/"+id,{method:"DELETE",headers:{"Authorization":"Bearer "+token}});if(r.ok)document.getElementById("row-"+id).remove();}'
+  + 'document.getElementById("modalForm").addEventListener("submit",async function(e){e.preventDefault();var btn=document.getElementById("submitBtn");btn.disabled=true;btn.textContent="Saving...";try{var file=document.getElementById("fImage").files[0];var imageUrl=document.getElementById("fImageUrl").value;if(file)imageUrl=await uploadImage(file);var body={slug:document.getElementById("fSlug").value,title:document.getElementById("fTitle").value,price:document.getElementById("fPrice").value,oldPrice:document.getElementById("fOldPrice").value,category:document.getElementById("fCategory").value,level:document.getElementById("fLevel").value,description:document.getElementById("fDesc").value,imageUrl:imageUrl};var id=document.getElementById("fId").value;var r=await fetch("/api/admin/courses"+(isEdit?"/"+id:""),{method:isEdit?"PATCH":"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+token},body:JSON.stringify(body)});var d=await r.json();if(!r.ok)return showMsg(d.error||"Failed",true);showMsg(isEdit?"Saved!":"Course created!",false);setTimeout(function(){location.reload();},700);}catch(err){showMsg(err.message||"Error",true);}finally{btn.disabled=false;btn.textContent=isEdit?"Save":"Create";}});'
+  + '<\/script>';
 %>
 <%- include('layout', { pageTitle, authUser, adminNav, body }) %>

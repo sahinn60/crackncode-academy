@@ -51,6 +51,7 @@ model Course {
   level       String?
   duration    String?
   isPublished Boolean      @default(false)
+  isTopSelling Boolean     @default(false)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
   enrollments Enrollment[]
@@ -134,6 +135,7 @@ model Ebook {
   price     Int
   oldPrice  Int?
   coverUrl  String?
+  fileUrl   String?
   isPublished Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
