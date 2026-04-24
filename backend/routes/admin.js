@@ -178,7 +178,7 @@ router.post("/ebooks", async (req, res) => {
   res.status(201).json(await prisma.ebook.create({ data: { slug, title, author, price: +price, oldPrice: oldPrice ? +oldPrice : null, coverUrl, isPublished: true } }));
 });
 router.patch("/ebooks/:id", async (req, res) => {
-  const allowed = ["title", "author", "price", "oldPrice", "coverUrl", "isPublished"];
+  const allowed = ["title", "author", "price", "oldPrice", "coverUrl", "fileUrl", "isPublished"];
   const data = Object.fromEntries(Object.entries(req.body).filter(([k]) => allowed.includes(k)));
   if (data.price != null) data.price = +data.price;
   if (data.oldPrice != null) data.oldPrice = +data.oldPrice;

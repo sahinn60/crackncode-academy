@@ -318,7 +318,7 @@ app.get("/ebooks/:slug", async (req, res) => {
   if (!ebook) ebook = ebooks.find(e => e.slug === req.params.slug) || null;
   if (!ebook) return res.status(404).send("E-Book not found");
   const discountPct = ebook.old && ebook.old > ebook.price ? Math.round((1 - ebook.price / ebook.old) * 100) : 0;
-  // Check if logged-in user has purchased this ebook
+  // Check purchase access — only possible if ebook has a DB id
   let hasAccess = false;
   if (req.session.user && ebook.id) {
     try {
@@ -332,9 +332,9 @@ app.get("/ebooks/:slug", async (req, res) => {
   renderPage(res, "pages/ebook-detail", { pageTitle: ebook.title, ebook, discountPct, hasAccess });
 });
 
-// Ebook reader — protected, only for purchased users
+// Ebook reader — protected
 app.get("/ebooks/:slug/read", async (req, res) => {
-  if (!req.session.user) return res.redirect("/login?redirect=/ebooks/" + req.params.slug);
+  if (!req.session.user) return res.redirect("/login");
   let ebook = null;
   try {
     const dbE = await prismaClient.ebook.findUnique({ where: { slug: req.params.slug } });
@@ -343,13 +343,15 @@ app.get("/ebooks/:slug/read", async (req, res) => {
   if (!ebook) return res.status(404).send("E-Book not found");
   // Verify access
   let hasAccess = false;
-  try {
-    const access = await prismaClient.ebookAccess.findUnique({
-      where: { userId_ebookId: { userId: req.session.user.id, ebookId: ebook.id } },
-    });
-    hasAccess = !!access;
-  } catch (_) {}
-  if (!hasAccess) return res.redirect("/ebooks/" + req.params.slug + "?msg=purchase_required");
+  if (ebook.id) {
+    try {
+      const access = await prismaClient.ebookAccess.findUnique({
+        where: { userId_ebookId: { userId: req.session.user.id, ebookId: ebook.id } },
+      });
+      hasAccess = !!access;
+    } catch (_) {}
+  }
+  if (!hasAccess) return res.redirect("/ebooks/" + req.params.slug);
   renderPage(res, "pages/ebook-read", { pageTitle: "Reading: " + ebook.title, ebook });
 });
 
