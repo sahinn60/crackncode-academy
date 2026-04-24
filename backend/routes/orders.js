@@ -11,18 +11,20 @@ router.post("/", async (req, res) => {
     if (!Array.isArray(items) || items.length === 0)
       return res.status(400).json({ error: "items array is required" });
 
-    // Resolve courseId from slug for COURSE type items
     const resolvedItems = await Promise.all(
       items.map(async (i) => {
         let courseId = i.courseId || null;
+        let ebookId  = i.ebookId  || null;
+
         if (i.productType === "COURSE" && !courseId && i.productSlug) {
-          const course = await prisma.course.findUnique({
-            where: { slug: i.productSlug },
-            select: { id: true },
-          });
-          courseId = course ? course.id : null;
+          const c = await prisma.course.findUnique({ where: { slug: i.productSlug }, select: { id: true } });
+          courseId = c ? c.id : null;
         }
-        return { ...i, courseId };
+        if (i.productType === "EBOOK" && !ebookId && i.productSlug) {
+          const e = await prisma.ebook.findUnique({ where: { slug: i.productSlug }, select: { id: true } });
+          ebookId = e ? e.id : null;
+        }
+        return { ...i, courseId, ebookId };
       })
     );
 
@@ -44,6 +46,8 @@ router.post("/", async (req, res) => {
       include: { items: true },
     });
 
+    // Store ebookIds in order for pay step
+    order._ebookIds = resolvedItems.filter(i => i.ebookId).map(i => i.ebookId);
     res.status(201).json(order);
   } catch (err) {
     console.error("Create order error:", err);
@@ -51,7 +55,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-// POST /api/orders/:id/pay — mark PAID and enroll
+// POST /api/orders/:id/pay
 router.post("/:id/pay", async (req, res) => {
   try {
     const order = await prisma.order.findUnique({
@@ -65,12 +69,30 @@ router.post("/:id/pay", async (req, res) => {
 
     const courseItems = order.items.filter((i) => i.courseId);
 
+    // Resolve ebook IDs from slugs
+    const ebookItems = order.items.filter(i => i.productType === "EBOOK");
+    const ebookIds = await Promise.all(
+      ebookItems.map(async (i) => {
+        const e = await prisma.ebook.findUnique({ where: { slug: i.productSlug }, select: { id: true } });
+        return e ? e.id : null;
+      })
+    ).then(ids => ids.filter(Boolean));
+
     await prisma.$transaction([
       prisma.order.update({ where: { id: order.id }, data: { status: "PAID" } }),
+      // Enroll in courses
       ...courseItems.map((i) =>
         prisma.enrollment.upsert({
           where: { userId_courseId: { userId: order.userId, courseId: i.courseId } },
           create: { userId: order.userId, courseId: i.courseId },
+          update: {},
+        })
+      ),
+      // Grant ebook access
+      ...ebookIds.map((ebookId) =>
+        prisma.ebookAccess.upsert({
+          where: { userId_ebookId: { userId: order.userId, ebookId } },
+          create: { userId: order.userId, ebookId },
           update: {},
         })
       ),

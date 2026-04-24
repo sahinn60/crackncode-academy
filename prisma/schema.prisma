@@ -35,6 +35,7 @@ model User {
   createdAt    DateTime     @default(now())
   orders       Order[]
   enrollments  Enrollment[]
+  ebookAccess  EbookAccess[]
 }
 
 model Course {
@@ -90,6 +91,17 @@ model Enrollment {
   @@unique([userId, courseId])
 }
 
+model EbookAccess {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  ebookId     String
+  ebook       Ebook    @relation(fields: [ebookId], references: [id])
+  grantedAt   DateTime @default(now())
+
+  @@unique([userId, ebookId])
+}
+
 model ContactMessage {
   id        String   @id @default(cuid())
   name      String
@@ -139,6 +151,7 @@ model Ebook {
   isPublished Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  ebookAccess EbookAccess[]
 }
 
 model Blog {

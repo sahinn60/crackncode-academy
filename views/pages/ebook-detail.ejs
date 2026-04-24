@@ -41,20 +41,29 @@
         </div>
 
         <div class="mt-6 flex flex-col gap-3 sm:flex-row">
-          <form action="/cart/add" method="post" class="sm:flex-1" data-ajax-cart>
-            <input type="hidden" name="type" value="ebook" />
-            <input type="hidden" name="slug" value="<%= ebook.slug %>" />
-            <input type="hidden" name="redirect" value="/ebooks/<%= ebook.slug %>" />
-            <button type="submit" class="flex w-full items-center justify-center gap-2 rounded-xl bg-sky py-3.5 text-base font-bold text-night shadow-lg transition hover:bg-sky/90">
-              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.5 6H19M7 13l.4-2M10 21a1 1 0 100-2 1 1 0 000 2zm8 0a1 1 0 100-2 1 1 0 000 2z"/></svg>
-              Add To Cart
-            </button>
-          </form>
-
-          <a href="/checkout?type=ebook&slug=<%= encodeURIComponent(ebook.slug) %>" class="sm:flex-1 flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-500/10 py-3.5 text-base font-bold text-emerald-200 transition hover:bg-emerald-500/15">
-            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            Buy Now
-          </a>
+          <% if (hasAccess) { %>
+            <!-- User has purchased — show Read Now -->
+            <a href="/ebooks/<%= ebook.slug %>/read"
+              class="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 py-3.5 text-base font-bold text-white shadow-lg transition hover:opacity-90">
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13"/></svg>
+              এখনই পড়ুন / ডাউনলোড করুন
+            </a>
+          <% } else { %>
+            <!-- Not purchased — show buy options -->
+            <form action="/cart/add" method="post" class="sm:flex-1" data-ajax-cart>
+              <input type="hidden" name="type" value="ebook" />
+              <input type="hidden" name="slug" value="<%= ebook.slug %>" />
+              <input type="hidden" name="redirect" value="/ebooks/<%= ebook.slug %>" />
+              <button type="submit" class="flex w-full items-center justify-center gap-2 rounded-xl bg-sky py-3.5 text-base font-bold text-night shadow-lg transition hover:bg-sky/90">
+                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13l-1.5 6H19M7 13l.4-2M10 21a1 1 0 100-2 1 1 0 000 2zm8 0a1 1 0 100-2 1 1 0 000 2z"/></svg>
+                Add To Cart
+              </button>
+            </form>
+            <a href="/checkout?type=ebook&slug=<%= encodeURIComponent(ebook.slug) %>" class="sm:flex-1 flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-400/40 bg-emerald-500/10 py-3.5 text-base font-bold text-emerald-200 transition hover:bg-emerald-500/15">
+              <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              Buy Now
+            </a>
+          <% } %>
         </div>
 
         <div class="mt-8 space-y-4 text-sm leading-7 text-slate-300">

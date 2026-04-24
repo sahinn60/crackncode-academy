@@ -1,7 +1,8 @@
 require("dotenv").config();
 const path = require("path");
 const express = require("express");
-const session = require("express-session");
+const cookieParser = require("cookie-parser");
+const jwt = require("jsonwebtoken");
 const helmet = require("helmet");
 const compression = require("compression");
 const morgan = require("morgan");
@@ -94,6 +95,43 @@ app.use("/api", apiLimiter);
 app.use(express.static(path.join(__dirname, "public"), { maxAge: "1d" }));
 app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 app.use(express.json({ limit: "10kb" }));
+app.use(cookieParser());
+
+// ── JWT Cookie helpers ──────────────────────────────────────────
+function setAuthCookie(res, token) {
+  res.cookie("cnc_auth", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+}
+
+function clearAuthCookie(res) {
+  res.clearCookie("cnc_auth");
+}
+
+function getAuthUser(req) {
+  try {
+    const token = req.cookies.cnc_auth;
+    if (!token) return null;
+    return jwt.verify(token, process.env.JWT_SECRET);
+  } catch { return null; }
+}
+
+// Cart stored in cookie (JSON)
+function getCart(req) {
+  try { return JSON.parse(req.cookies.cnc_cart || "[]"); } catch { return []; }
+}
+
+function setCart(res, cart) {
+  res.cookie("cnc_cart", JSON.stringify(cart), {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    maxAge: 7 * 24 * 60 * 60 * 1000,
+  });
+}
 
 // ── Session (must be before API routes and all page routes) ──
 app.use(
@@ -279,8 +317,39 @@ app.get("/ebooks/:slug", async (req, res) => {
   if (!ebook) ebook = ebooks.find(e => e.slug === req.params.slug) || null;
   if (!ebook) return res.status(404).send("E-Book not found");
   const discountPct = ebook.old && ebook.old > ebook.price ? Math.round((1 - ebook.price / ebook.old) * 100) : 0;
+  // Check if logged-in user has purchased this ebook
+  let hasAccess = false;
+  if (req.session.user && ebook.id) {
+    try {
+      const access = await prismaClient.ebookAccess.findUnique({
+        where: { userId_ebookId: { userId: req.session.user.id, ebookId: ebook.id } },
+      });
+      hasAccess = !!access;
+    } catch (_) {}
+  }
   res.locals.activeNav = "ebooks";
-  renderPage(res, "pages/ebook-detail", { pageTitle: ebook.title, ebook, discountPct });
+  renderPage(res, "pages/ebook-detail", { pageTitle: ebook.title, ebook, discountPct, hasAccess });
+});
+
+// Ebook reader — protected, only for purchased users
+app.get("/ebooks/:slug/read", async (req, res) => {
+  if (!req.session.user) return res.redirect("/login?redirect=/ebooks/" + req.params.slug);
+  let ebook = null;
+  try {
+    const dbE = await prismaClient.ebook.findUnique({ where: { slug: req.params.slug } });
+    ebook = dbE ? { ...dbE, cover: dbE.coverUrl, old: dbE.oldPrice } : null;
+  } catch (_) {}
+  if (!ebook) return res.status(404).send("E-Book not found");
+  // Verify access
+  let hasAccess = false;
+  try {
+    const access = await prismaClient.ebookAccess.findUnique({
+      where: { userId_ebookId: { userId: req.session.user.id, ebookId: ebook.id } },
+    });
+    hasAccess = !!access;
+  } catch (_) {}
+  if (!hasAccess) return res.redirect("/ebooks/" + req.params.slug + "?msg=purchase_required");
+  renderPage(res, "pages/ebook-read", { pageTitle: "Reading: " + ebook.title, ebook });
 });
 
 app.get("/blog", async (req, res) => {
@@ -342,7 +411,7 @@ app.get("/login", (req, res) => {
 app.get("/profile", async (req, res) => {
   if (!req.session.user) return res.redirect("/login");
   const prisma = require("./backend/lib/prisma");
-  const [user, enrollments, orders] = await Promise.all([
+  const [user, enrollments, orders, ebookAccesses] = await Promise.all([
     prisma.user.findUnique({
       where: { id: req.session.user.id },
       select: { id: true, name: true, email: true, role: true, createdAt: true },
@@ -357,9 +426,14 @@ app.get("/profile", async (req, res) => {
       include: { items: true },
       orderBy: { createdAt: "desc" },
     }),
+    prisma.ebookAccess.findMany({
+      where: { userId: req.session.user.id },
+      include: { ebook: true },
+      orderBy: { grantedAt: "desc" },
+    }),
   ]);
   if (!user) return res.redirect("/login");
-  renderPage(res, "pages/profile", { pageTitle: "My Profile", user, enrollments, orders });
+  renderPage(res, "pages/profile", { pageTitle: "My Profile", user, enrollments, orders, ebookAccesses });
 });
 
 app.get("/my-courses", (req, res) => res.redirect("/profile"));

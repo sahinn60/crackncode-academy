@@ -1,28 +1,24 @@
 const multer = require("multer");
-const path = require("path");
-const crypto = require("crypto");
+const cloudinary = require("cloudinary").v2;
+const { CloudinaryStorage } = require("multer-storage-cloudinary");
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, path.join(__dirname, "../../public/uploads")),
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname).toLowerCase();
-    cb(null, crypto.randomBytes(12).toString("hex") + ext);
-  },
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key:    process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-const imageFilter = (req, file, cb) => {
-  const allowed = [".jpg", ".jpeg", ".png", ".webp", ".gif"];
-  const ext = path.extname(file.originalname).toLowerCase();
-  allowed.includes(ext) ? cb(null, true) : cb(new Error("Only image files allowed"));
-};
+const imageStorage = new CloudinaryStorage({
+  cloudinary,
+  params: { folder: "crackncode/images", allowed_formats: ["jpg","jpeg","png","webp","gif"], transformation: [{ quality: "auto" }] },
+});
 
-const docFilter = (req, file, cb) => {
-  const allowed = [".pdf", ".doc", ".docx"];
-  const ext = path.extname(file.originalname).toLowerCase();
-  allowed.includes(ext) ? cb(null, true) : cb(new Error("Only PDF/DOC files allowed"));
-};
+const docStorage = new CloudinaryStorage({
+  cloudinary,
+  params: { folder: "crackncode/docs", allowed_formats: ["pdf","doc","docx"], resource_type: "raw" },
+});
 
-const upload = multer({ storage, fileFilter: imageFilter, limits: { fileSize: 5 * 1024 * 1024 } });
-const uploadDoc = multer({ storage, fileFilter: docFilter, limits: { fileSize: 20 * 1024 * 1024 } });
+const upload    = multer({ storage: imageStorage, limits: { fileSize: 5  * 1024 * 1024 } });
+const uploadDoc = multer({ storage: docStorage,   limits: { fileSize: 20 * 1024 * 1024 } });
 
 module.exports = { upload, uploadDoc };
