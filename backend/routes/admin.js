@@ -8,13 +8,15 @@ router.use(authenticate, requireAdmin);
 // ── Image Upload ─────────────────────────────────────────────
 router.post("/upload", upload.single("image"), (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded" });
-  res.json({ url: "/uploads/" + req.file.filename });
+  const url = req.file.path || ("/uploads/" + req.file.filename);
+  res.json({ url });
 });
 
 // ── Document Upload ─────────────────────────────────────────
 router.post("/upload-doc", uploadDoc.single("file"), (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded" });
-  res.json({ url: "/uploads/" + req.file.filename, name: req.file.originalname });
+  const url = req.file.path || ("/uploads/" + req.file.filename);
+  res.json({ url, name: req.file.originalname });
 });
 
 // ── Top Selling ─────────────────────────────────────────────
