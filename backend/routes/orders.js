@@ -53,7 +53,7 @@ router.post("/", async (req, res) => {
   }
 });
 
-// POST /api/orders/:id/initiate-eps — initiate EPS payment
+// POST /api/orders/:id/initiate-eps
 router.post("/:id/initiate-eps", async (req, res) => {
   try {
     const order = await prisma.order.findUnique({
@@ -66,25 +66,26 @@ router.post("/:id/initiate-eps", async (req, res) => {
     if (order.status === "PAID") return res.status(409).json({ error: "Order already paid" });
 
     const BASE_URL = process.env.BASE_URL || "http://localhost:3000";
+    const txnId = require("../lib/eps").generateMerchantTxnId();
 
-    const { paymentUrl, merchantTransactionId } = await initiatePayment({
+    const epsResult = await initiatePayment({
       orderId: order.id,
       amount: order.totalPrice,
       customerName: order.user.name,
       customerEmail: order.user.email,
       customerPhone: req.body.phone || "01700000000",
-      successUrl: `${BASE_URL}/payment/eps/success?orderId=${order.id}&merchantTxnId=${merchantTransactionId}`,
+      successUrl: `${BASE_URL}/payment/eps/success?orderId=${order.id}&merchantTxnId=${txnId}`,
       failUrl:    `${BASE_URL}/payment/eps/fail?orderId=${order.id}`,
       cancelUrl:  `${BASE_URL}/payment/eps/cancel?orderId=${order.id}`,
+      merchantTransactionId: txnId,
     });
 
-    // Save merchantTransactionId to order for verification
     await prisma.order.update({
       where: { id: order.id },
-      data: { merchantTransactionId },
+      data: { merchantTransactionId: txnId },
     });
 
-    res.json({ paymentUrl, merchantTransactionId });
+    res.json({ paymentUrl: epsResult.paymentUrl, merchantTransactionId: txnId });
   } catch (err) {
     console.error("EPS initiate error:", err);
     res.status(500).json({ error: err.message || "Payment initiation failed" });

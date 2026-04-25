@@ -19,12 +19,12 @@ function generateMerchantTxnId() {
 }
 
 // Initiate EPS payment — returns redirect URL
-async function initiatePayment({ orderId, amount, customerName, customerEmail, customerPhone, successUrl, failUrl, cancelUrl }) {
-  const merchantTransactionId = generateMerchantTxnId();
+async function initiatePayment({ orderId, amount, customerName, customerEmail, customerPhone, successUrl, failUrl, cancelUrl, merchantTransactionId }) {
+  const txnId = merchantTransactionId || generateMerchantTxnId();
 
   const payload = {
     merchantId: EPS_MERCHANT_ID,
-    merchantTransactionId,
+    merchantTransactionId: txnId,
     amount: amount.toString(),
     currency: "BDT",
     customerName,
@@ -50,7 +50,7 @@ async function initiatePayment({ orderId, amount, customerName, customerEmail, c
     throw new Error(data.message || "EPS payment initiation failed");
   }
 
-  return { paymentUrl: data.paymentUrl, merchantTransactionId };
+  return { paymentUrl: data.paymentUrl, merchantTransactionId: txnId };
 }
 
 // Verify EPS transaction status
