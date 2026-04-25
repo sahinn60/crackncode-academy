@@ -706,9 +706,9 @@ app.get("/payment/eps/success", async (req, res) => {
     if (!verified) {
       try {
         const status = await checkTransactionStatus(merchantTxnId || order.merchantTransactionId, EPSTransactionId);
-        verified = status.transactionStatus === "SUCCESS" || status.status === "SUCCESS" || status.responseCode === "00";
+        verified = status.Status === "Success" || status.transactionStatus === "SUCCESS" || status.responseCode === "00";
       } catch (_) {
-        verified = true; // trust callback if verification fails
+        verified = true;
       }
     }
 
