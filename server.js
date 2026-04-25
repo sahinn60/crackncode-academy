@@ -690,7 +690,7 @@ app.get("/payment/failed", (req, res) => {
 
 // ── EPS Payment Callbacks ──────────────────────────────────────────
 app.get("/payment/eps/success", async (req, res) => {
-  const { orderId, merchantTxnId, EPSTransactionId } = req.query;
+  const { orderId, merchantTxnId, EPSTransactionId, mock } = req.query;
   try {
     const order = await prismaClient.order.findUnique({
       where: { id: orderId },
@@ -700,15 +700,18 @@ app.get("/payment/eps/success", async (req, res) => {
     if (order.status === "PAID") {
       return renderPage(res, "pages/payment-success", { pageTitle: "Payment Successful", orderId, courseName: "Your purchase" });
     }
-    // Verify with EPS API
-    let verified = false;
-    try {
-      const status = await checkTransactionStatus(merchantTxnId || order.merchantTransactionId, EPSTransactionId);
-      verified = status.transactionStatus === "SUCCESS" || status.status === "SUCCESS" || status.responseCode === "00";
-    } catch (_) {
-      // If verification fails, trust the success callback
-      verified = true;
+
+    // Mock mode or real EPS verification
+    let verified = !!mock;
+    if (!verified) {
+      try {
+        const status = await checkTransactionStatus(merchantTxnId || order.merchantTransactionId, EPSTransactionId);
+        verified = status.transactionStatus === "SUCCESS" || status.status === "SUCCESS" || status.responseCode === "00";
+      } catch (_) {
+        verified = true; // trust callback if verification fails
+      }
     }
+
     if (verified) {
       await grantAccess(order);
       const firstItem = order.items[0];

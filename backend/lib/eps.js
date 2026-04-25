@@ -22,6 +22,12 @@ function generateMerchantTxnId() {
 async function initiatePayment({ orderId, amount, customerName, customerEmail, customerPhone, successUrl, failUrl, cancelUrl, merchantTransactionId }) {
   const txnId = merchantTransactionId || generateMerchantTxnId();
 
+  // If EPS credentials not configured, use mock mode
+  if (!EPS_MERCHANT_ID || EPS_MERCHANT_ID === "your_merchant_id") {
+    console.warn("[EPS] Credentials not set — using mock payment mode");
+    return { paymentUrl: successUrl + "&mock=1", merchantTransactionId: txnId };
+  }
+
   const payload = {
     merchantId: EPS_MERCHANT_ID,
     merchantTransactionId: txnId,
@@ -38,16 +44,19 @@ async function initiatePayment({ orderId, amount, customerName, customerEmail, c
 
   const response = await fetch(`${EPS_BASE_URL}/InitiatePayment`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "apiKey": EPS_API_KEY,
-    },
+    headers: { "Content-Type": "application/json", "apiKey": EPS_API_KEY },
     body: JSON.stringify(payload),
   });
 
-  const data = await response.json();
+  const text = await response.text();
+  if (!text) throw new Error("EPS returned empty response");
+
+  let data;
+  try { data = JSON.parse(text); }
+  catch (_) { throw new Error("EPS returned invalid JSON: " + text.slice(0, 100)); }
+
   if (!response.ok || !data.paymentUrl) {
-    throw new Error(data.message || "EPS payment initiation failed");
+    throw new Error(data.message || data.error || "EPS payment initiation failed");
   }
 
   return { paymentUrl: data.paymentUrl, merchantTransactionId: txnId };
