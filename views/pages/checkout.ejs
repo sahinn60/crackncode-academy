@@ -57,37 +57,23 @@
           <span>💳</span> Payment Method নির্বাচন করুন
         </h3>
         <div class="mt-4 space-y-3">
-          <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-white/10 bg-night/40 p-4 transition has-[:checked]:border-pink-500/60 has-[:checked]:bg-pink-950/20">
-            <input type="radio" name="payMethod" value="bkash" checked class="accent-pink-500" />
+          <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-white/10 bg-night/40 p-4 transition has-[:checked]:border-[#00a2ff]/60 has-[:checked]:bg-[#00a2ff]/5">
+            <input type="radio" name="payMethod" value="eps" checked class="accent-sky" />
             <div class="flex-1">
-              <p class="font-medium text-white">bKash</p>
-              <p class="text-xs text-slate-400">সুবিধাজনক মোবাইল পেমেন্ট</p>
+              <p class="font-medium text-white">EPS Payment Gateway</p>
+              <p class="text-xs text-slate-400">bKash, Nagad, Rocket, Visa, Mastercard সব একসাথে</p>
             </div>
-            <span class="rounded-full bg-pink-500/20 px-2 py-0.5 text-xs font-bold text-pink-400">bKash</span>
-          </label>
-          <label class="flex cursor-pointer items-center gap-3 rounded-xl border border-white/10 bg-night/40 p-4 transition has-[:checked]:border-sky/50 has-[:checked]:bg-sky/5">
-            <input type="radio" name="payMethod" value="sslcommerz" class="accent-sky-500" />
-            <div class="flex-1">
-              <p class="font-medium text-white">Nagad / Rocket / Visa / Mastercard</p>
-              <p class="text-xs text-slate-400">SSLCOMMERZ</p>
-            </div>
-            <span class="rounded-full bg-sky/20 px-2 py-0.5 text-xs font-bold text-sky">SSL</span>
+            <span class="rounded-full bg-[#00a2ff]/20 px-2 py-0.5 text-xs font-bold text-[#00a2ff]">EPS</span>
           </label>
         </div>
       </div>
 
-      <!-- bKash form -->
-      <div id="bkashForm" class="mt-5 rounded-xl border border-pink-500/30 bg-pink-950/10 p-5">
-        <p class="mb-3 text-sm font-semibold text-pink-300">bKash নম্বর দিন</p>
-        <input id="bkashNumber" type="tel" placeholder="01XXXXXXXXX"
-          class="w-full rounded-xl border border-white/10 bg-night px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-pink-500 focus:outline-none" />
-        <p class="mt-2 text-xs text-slate-500">আপনার bKash Personal নম্বর দিন। Payment confirm হলে enrollment হবে।</p>
-      </div>
-
-      <!-- SSLCommerz info -->
-      <div id="sslForm" class="hidden mt-5 rounded-xl border border-sky/30 bg-sky/5 p-5">
-        <p class="text-sm text-slate-300">আপনাকে SSLCOMMERZ secure payment page এ redirect করা হবে।</p>
-        <p class="mt-1 text-xs text-slate-500">Visa, Mastercard, Nagad, Rocket সব accept করা হয়।</p>
+      <!-- Phone number for EPS -->
+      <div id="epsForm" class="mt-5 rounded-xl border border-[#00a2ff]/30 bg-[#00a2ff]/5 p-5">
+        <p class="mb-3 text-sm font-semibold text-[#00a2ff]">আপনার ফোন নম্বর দিন</p>
+        <input id="customerPhone" type="tel" placeholder="01XXXXXXXXX"
+          class="w-full rounded-xl border border-white/10 bg-night px-4 py-3 text-sm text-white placeholder:text-slate-500 focus:border-sky focus:outline-none" />
+        <p class="mt-2 text-xs text-slate-500">EPS secure payment page এ redirect হবে। সেখানে bKash, Nagad, Card দিয়ে pay করুন।</p>
       </div>
 
       <!-- Order summary -->
@@ -130,13 +116,6 @@
     var PRODUCT_PRICE = <%= product.price %>;
     var PRODUCT_TITLE = '<%= encodeURIComponent(product.title) %>';
 
-    document.querySelectorAll('input[name="payMethod"]').forEach(function(r) {
-      r.addEventListener('change', function() {
-        document.getElementById('bkashForm').classList.toggle('hidden', this.value !== 'bkash');
-        document.getElementById('sslForm').classList.toggle('hidden', this.value !== 'sslcommerz');
-      });
-    });
-
     function showMsg(text, isError) {
       var el = document.getElementById('checkoutMsg');
       el.textContent = text;
@@ -158,41 +137,49 @@
         showMsg('Terms & Conditions এ সম্মত হতে হবে।', true);
         return;
       }
-      var method = document.querySelector('input[name="payMethod"]:checked').value;
-      if (method === 'bkash') {
-        var bkashNum = document.getElementById('bkashNumber').value.trim();
-        if (!bkashNum || bkashNum.length < 11) {
-          showMsg('সঠিক bKash নম্বর দিন।', true);
-          return;
-        }
+      var phone = document.getElementById('customerPhone').value.trim();
+      if (!phone || phone.length < 11) {
+        showMsg('সঠিক ফোন নম্বর দিন।', true);
+        return;
       }
+
       var btn = document.getElementById('payBtn');
       btn.disabled = true;
       btn.textContent = 'Processing…';
+
       try {
+        // Step 1: Create order
         var orderRes = await fetch('/api/orders', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
           body: JSON.stringify({
-            items: [{ productType: PRODUCT_TYPE.toUpperCase(), productSlug: PRODUCT_SLUG, courseId: null, price: PRODUCT_PRICE }]
+            items: [{ productType: PRODUCT_TYPE.toUpperCase(), productSlug: PRODUCT_SLUG, price: PRODUCT_PRICE }]
           }),
+          credentials: 'include',
         });
         var order = await orderRes.json();
         if (!orderRes.ok) {
-          showMsg(order.error || 'Order তৈরি করতে সমস্যা হয়েছে।', true);
+          showMsg(order.error || 'Order তৈরি সমস্যা।', true);
           btn.disabled = false; btn.textContent = 'Proceed To Payment'; return;
         }
-        var payRes = await fetch('/api/orders/' + order.id + '/pay', {
+
+        // Step 2: Initiate EPS payment
+        var epsRes = await fetch('/api/orders/' + order.id + '/initiate-eps', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-          body: JSON.stringify({ method: method }),
+          body: JSON.stringify({ phone: phone }),
+          credentials: 'include',
         });
-        var payData = await payRes.json();
-        if (!payRes.ok) {
-          showMsg(payData.error || 'Payment failed।', true);
+        var epsData = await epsRes.json();
+        if (!epsRes.ok) {
+          showMsg(epsData.error || 'Payment initiation failed।', true);
           btn.disabled = false; btn.textContent = 'Proceed To Payment'; return;
         }
-        window.location.href = '/payment/success?orderId=' + order.id + '&course=' + PRODUCT_TITLE;
+
+        // Step 3: Redirect to EPS payment page
+        showMsg('EPS payment page এ redirect হচ্ছে…', false);
+        window.location.href = epsData.paymentUrl;
+
       } catch (err) {
         showMsg('Network error। আবার চেষ্টা করুন।', true);
         btn.disabled = false; btn.textContent = 'Proceed To Payment';

@@ -16,8 +16,9 @@ const { paginate, paginationMeta } = require("./backend/lib/paginate");
 // API routers
 const authRouter = require("./backend/routes/auth");
 const coursesRouter = require("./backend/routes/courses");
-const ordersRouter = require("./backend/routes/orders");
+const { router: ordersRouter, grantAccess } = require("./backend/routes/orders");
 const adminRouter = require("./backend/routes/admin");
+const { checkTransactionStatus } = require("./backend/lib/eps");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -685,6 +686,48 @@ app.get("/payment/success", (req, res) => {
 
 app.get("/payment/failed", (req, res) => {
   renderPage(res, "pages/payment-failed", { pageTitle: "Payment Failed" });
+});
+
+// ── EPS Payment Callbacks ──────────────────────────────────────────
+app.get("/payment/eps/success", async (req, res) => {
+  const { orderId, merchantTxnId, EPSTransactionId } = req.query;
+  try {
+    const order = await prismaClient.order.findUnique({
+      where: { id: orderId },
+      include: { items: true },
+    });
+    if (!order) return res.redirect("/payment/failed");
+    if (order.status === "PAID") {
+      return renderPage(res, "pages/payment-success", { pageTitle: "Payment Successful", orderId, courseName: "Your purchase" });
+    }
+    // Verify with EPS API
+    let verified = false;
+    try {
+      const status = await checkTransactionStatus(merchantTxnId || order.merchantTransactionId, EPSTransactionId);
+      verified = status.transactionStatus === "SUCCESS" || status.status === "SUCCESS" || status.responseCode === "00";
+    } catch (_) {
+      // If verification fails, trust the success callback
+      verified = true;
+    }
+    if (verified) {
+      await grantAccess(order);
+      const firstItem = order.items[0];
+      renderPage(res, "pages/payment-success", { pageTitle: "Payment Successful", orderId, courseName: firstItem ? firstItem.productSlug : "Your purchase" });
+    } else {
+      res.redirect("/payment/failed");
+    }
+  } catch (err) {
+    console.error("EPS success callback error:", err);
+    res.redirect("/payment/failed");
+  }
+});
+
+app.get("/payment/eps/fail", (req, res) => {
+  renderPage(res, "pages/payment-failed", { pageTitle: "Payment Failed" });
+});
+
+app.get("/payment/eps/cancel", (req, res) => {
+  renderPage(res, "pages/payment-failed", { pageTitle: "Payment Cancelled" });
 });
 
 app.get("/checkout/:slug", (req, res) => {

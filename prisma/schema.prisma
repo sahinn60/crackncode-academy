@@ -60,13 +60,14 @@ model Course {
 }
 
 model Order {
-  id         String      @id @default(cuid())
-  userId     String
-  user       User        @relation(fields: [userId], references: [id])
-  status     OrderStatus @default(PENDING)
-  totalPrice Int
-  createdAt  DateTime    @default(now())
-  items      OrderItem[]
+  id                    String      @id @default(cuid())
+  userId                String
+  user                  User        @relation(fields: [userId], references: [id])
+  status                OrderStatus @default(PENDING)
+  totalPrice            Int
+  merchantTransactionId String?
+  createdAt             DateTime    @default(now())
+  items                 OrderItem[]
 }
 
 model OrderItem {
