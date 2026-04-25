@@ -18,7 +18,7 @@ const authRouter = require("./backend/routes/auth");
 const coursesRouter = require("./backend/routes/courses");
 const { router: ordersRouter, grantAccess } = require("./backend/routes/orders");
 const adminRouter = require("./backend/routes/admin");
-const { checkTransactionStatus } = require("./backend/lib/eps");
+const { checkTransactionStatus, isPaymentSuccessful } = require("./backend/lib/eps");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -706,7 +706,7 @@ app.get("/payment/eps/success", async (req, res) => {
     if (!verified) {
       try {
         const status = await checkTransactionStatus(merchantTxnId || order.merchantTransactionId, EPSTransactionId);
-        verified = status.Status === "Success" || status.transactionStatus === "SUCCESS" || status.responseCode === "00";
+        verified = isPaymentSuccessful(status);
       } catch (_) {
         verified = true;
       }
