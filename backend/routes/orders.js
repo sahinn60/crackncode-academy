@@ -104,6 +104,25 @@ router.post("/:id/pay", async (req, res) => {
     if (order.userId !== req.user.id) return res.status(403).json({ error: "Forbidden" });
     if (order.status === "PAID") return res.status(409).json({ error: "Order already paid" });
 
+    // Prevent double payment: check if user already owns these products
+    for (const item of order.items) {
+      if (item.productType === "COURSE" && item.courseId) {
+        const existing = await prisma.enrollment.findUnique({
+          where: { userId_courseId: { userId: order.userId, courseId: item.courseId } },
+        });
+        if (existing) return res.status(409).json({ error: "You already own this course: " + item.productSlug });
+      }
+      if (item.productType === "EBOOK") {
+        const ebook = await prisma.ebook.findUnique({ where: { slug: item.productSlug }, select: { id: true } });
+        if (ebook) {
+          const existing = await prisma.ebookAccess.findUnique({
+            where: { userId_ebookId: { userId: order.userId, ebookId: ebook.id } },
+          });
+          if (existing) return res.status(409).json({ error: "You already own this ebook: " + item.productSlug });
+        }
+      }
+    }
+
     await grantAccess(order);
     res.json({ success: true, orderId: order.id });
   } catch (err) {

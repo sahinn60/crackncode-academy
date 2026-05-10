@@ -634,8 +634,20 @@ app.get("/courses/:slug", async (req, res) => {
     ? { ...dbCourse, image: dbCourse.imageUrl, discountPct: dbCourse.oldPrice ? Math.round((1 - dbCourse.price / dbCourse.oldPrice) * 100) : 0, modules: [], reviews: [], reviewsSummary: { avg: 0, count: 0, bars: [] } }
     : courseBySlug(req.params.slug);
   if (!course) return res.status(404).send("Course not found");
+  // Check if user is enrolled
+  let isEnrolled = false;
+  if (req.session.user && course.id) {
+    try {
+      const enrollment = await prismaClient.enrollment.findUnique({
+        where: { userId_courseId: { userId: req.session.user.id, courseId: course.id } },
+      });
+      isEnrolled = !!enrollment;
+    } catch (_) {}
+  }
+  // Also check via global helper
+  if (!isEnrolled && res.locals.ownedCourses && res.locals.ownedCourses.has(course.slug)) isEnrolled = true;
   res.locals.activeNav = "courses";
-  renderPage(res, "pages/course-detail", { pageTitle: course.titleBn || course.title, course });
+  renderPage(res, "pages/course-detail", { pageTitle: course.titleBn || course.title, course, isEnrolled });
 });
 
 app.get("/cart", (req, res) => {
