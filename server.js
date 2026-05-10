@@ -687,6 +687,17 @@ app.get("/courses/:slug", async (req, res) => {
   renderPage(res, "pages/course-detail", { pageTitle: course.titleBn || course.title, course, isEnrolled });
 });
 
+app.get("/courses/:slug/learn", async (req, res) => {
+  if (!req.session.user) return res.redirect("/login");
+  const dbCourse = await prismaClient.course.findUnique({ where: { slug: req.params.slug } });
+  const course = dbCourse ? { ...dbCourse, image: dbCourse.imageUrl } : courseBySlug(req.params.slug);
+  if (!course) return res.status(404).send("Course not found");
+  // Verify enrollment
+  var isEnrolled = res.locals.ownedCourses.has(req.params.slug);
+  if (!isEnrolled) return res.redirect("/courses/" + req.params.slug);
+  renderPage(res, "pages/course-learn", { pageTitle: "Learning: " + course.title, course });
+});
+
 app.get("/cart", (req, res) => {
   res.locals.activeNav = "cart";
   const cart = req.session.cart || [];
