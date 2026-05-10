@@ -24,6 +24,9 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 const prismaClient = require("./backend/lib/prisma");
 
+// Wake up Neon DB on startup (free tier auto-suspends)
+prismaClient.$connect().catch(() => console.log("[DB] Initial connection pending - Neon waking up..."));
+
 const { courses, bundles, workshops, ebooks, blogs, courseBySlug, findProduct, searchAll } = catalog;
 
 const topSelling = {
