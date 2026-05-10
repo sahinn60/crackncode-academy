@@ -2,6 +2,7 @@ const router = require("express").Router();
 const prisma = require("../lib/prisma");
 const { authenticate, requireAdmin } = require("../middleware/auth");
 const { upload, uploadDoc } = require("../middleware/upload");
+const { flushCache } = require("../lib/cache");
 
 router.use(authenticate, requireAdmin);
 
@@ -109,7 +110,62 @@ router.patch("/orders/:id/status", async (req, res) => {
   if (!valid.includes(status))
     return res.status(400).json({ error: `status must be one of ${valid.join(", ")}` });
 
-  const order = await prisma.order.update({ where: { id: req.params.id }, data: { status } });
+  const order = await prisma.order.update({
+    where: { id: req.params.id },
+    data: { status },
+    include: { items: true },
+  });
+
+  // When admin marks as PAID → auto-grant course enrollment + ebook access
+  if (status === "PAID") {
+    const courseItems = order.items.filter(i => i.courseId);
+    const ebookItems = order.items.filter(i => i.productType === "EBOOK");
+
+    // Grant course enrollments
+    for (const item of courseItems) {
+      await prisma.enrollment.upsert({
+        where: { userId_courseId: { userId: order.userId, courseId: item.courseId } },
+        create: { userId: order.userId, courseId: item.courseId },
+        update: {},
+      });
+    }
+
+    // Grant ebook access
+    for (const item of ebookItems) {
+      const ebook = await prisma.ebook.findUnique({ where: { slug: item.productSlug }, select: { id: true } });
+      if (ebook) {
+        await prisma.ebookAccess.upsert({
+          where: { userId_ebookId: { userId: order.userId, ebookId: ebook.id } },
+          create: { userId: order.userId, ebookId: ebook.id },
+          update: {},
+        });
+      }
+    }
+  }
+
+  // When admin marks as REFUNDED → revoke access
+  if (status === "REFUNDED") {
+    const courseItems = order.items.filter(i => i.courseId);
+    const ebookItems = order.items.filter(i => i.productType === "EBOOK");
+
+    for (const item of courseItems) {
+      await prisma.enrollment.deleteMany({
+        where: { userId: order.userId, courseId: item.courseId },
+      });
+    }
+    for (const item of ebookItems) {
+      const ebook = await prisma.ebook.findUnique({ where: { slug: item.productSlug }, select: { id: true } });
+      if (ebook) {
+        await prisma.ebookAccess.deleteMany({
+          where: { userId: order.userId, ebookId: ebook.id },
+        });
+      }
+    }
+  }
+
+  // Clear cache so user panel gets fresh data immediately
+  flushCache();
+
   res.json(order);
 });
 
