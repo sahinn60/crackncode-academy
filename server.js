@@ -157,6 +157,35 @@ app.use("/api/courses", coursesRouter);
 app.use("/api/orders", ordersRouter);
 app.use("/api/admin", adminRouter);
 
+// Protected resource link API — only serves link if user has paid
+app.get("/api/resource/:type/:slug", async (req, res) => {
+  if (!req.session.user) return res.status(401).json({ error: "Login required" });
+  const { type, slug } = req.params;
+  const userId = req.session.user.id;
+
+  try {
+    if (type === "course") {
+      const course = await prismaClient.course.findUnique({ where: { slug }, select: { id: true, resourceUrl: true } });
+      if (!course) return res.status(404).json({ error: "Course not found" });
+      const enrolled = await prismaClient.enrollment.findUnique({ where: { userId_courseId: { userId, courseId: course.id } } });
+      if (!enrolled) return res.status(403).json({ error: "Purchase required to access this resource" });
+      if (!course.resourceUrl) return res.status(404).json({ error: "No resource link available yet" });
+      res.json({ url: course.resourceUrl });
+    } else if (type === "ebook") {
+      const ebook = await prismaClient.ebook.findUnique({ where: { slug }, select: { id: true, fileUrl: true } });
+      if (!ebook) return res.status(404).json({ error: "Ebook not found" });
+      const access = await prismaClient.ebookAccess.findUnique({ where: { userId_ebookId: { userId, ebookId: ebook.id } } });
+      if (!access) return res.status(403).json({ error: "Purchase required to access this resource" });
+      if (!ebook.fileUrl) return res.status(404).json({ error: "No file available yet" });
+      res.json({ url: ebook.fileUrl });
+    } else {
+      res.status(400).json({ error: "Invalid type" });
+    }
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch resource" });
+  }
+});
+
 // Real-time ownership check API (for frontend JS state sync)
 app.get("/api/user/library", async (req, res) => {
   if (!req.session.user) return res.json({ courses: [], ebooks: [] });

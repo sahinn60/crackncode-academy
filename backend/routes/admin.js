@@ -20,6 +20,29 @@ router.post("/upload-doc", uploadDoc.single("file"), (req, res) => {
   res.json({ url, name: req.file.originalname });
 });
 
+// ── Link Verification ─────────────────────────────────────────
+router.post("/verify-link", async (req, res) => {
+  const { url } = req.body;
+  if (!url) return res.status(400).json({ error: "URL is required" });
+
+  // Validate URL format
+  try { new URL(url); } catch (_) {
+    return res.json({ valid: false, status: 0, message: "Invalid URL format" });
+  }
+
+  // Check if URL is accessible
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+    const response = await fetch(url, { method: "HEAD", signal: controller.signal, redirect: "follow" });
+    clearTimeout(timeout);
+    const valid = response.status >= 200 && response.status < 400;
+    res.json({ valid, status: response.status, message: valid ? "Link Active" : "Link returned " + response.status });
+  } catch (err) {
+    res.json({ valid: false, status: 0, message: err.name === "AbortError" ? "Timeout - link too slow" : "Link unreachable" });
+  }
+});
+
 // ── Top Selling ─────────────────────────────────────────────
 router.patch("/courses/:id/topselling", async (req, res) => {
   const { isTopSelling } = req.body;
@@ -40,19 +63,19 @@ router.get("/courses", async (_req, res) => {
 
 // POST /api/admin/courses
 router.post("/courses", async (req, res) => {
-  const { slug, title, titleBn, description, price, oldPrice, imageUrl, category, courseType, level, duration } = req.body;
+  const { slug, title, titleBn, description, price, oldPrice, imageUrl, category, courseType, level, duration, resourceUrl } = req.body;
   if (!slug || !title || price == null)
     return res.status(400).json({ error: "slug, title and price are required" });
 
   const course = await prisma.course.create({
-    data: { slug, title, titleBn, description, price: +price, oldPrice: oldPrice ? +oldPrice : null, imageUrl, category, courseType, level, duration, isPublished: true },
+    data: { slug, title, titleBn, description, price: +price, oldPrice: oldPrice ? +oldPrice : null, imageUrl, category, courseType, level, duration, resourceUrl: resourceUrl || null, isPublished: true },
   });
   res.status(201).json(course);
 });
 
 // PATCH /api/admin/courses/:id
 router.patch("/courses/:id", async (req, res) => {
-  const allowed = ["title", "titleBn", "description", "price", "oldPrice", "imageUrl", "category", "courseType", "level", "duration", "isPublished"];
+  const allowed = ["title", "titleBn", "description", "price", "oldPrice", "imageUrl", "category", "courseType", "level", "duration", "isPublished", "resourceUrl"];
   const data = Object.fromEntries(Object.entries(req.body).filter(([k]) => allowed.includes(k)));
   if (data.price != null) data.price = +data.price;
   if (data.oldPrice != null) data.oldPrice = +data.oldPrice;
@@ -192,7 +215,7 @@ router.post("/bundles", async (req, res) => {
   res.status(201).json(await prisma.bundle.create({ data: { title, price: +price, oldPrice: oldPrice ? +oldPrice : null, imageUrl, isPublished: true } }));
 });
 router.patch("/bundles/:id", async (req, res) => {
-  const allowed = ["title", "price", "oldPrice", "imageUrl", "isPublished"];
+  const allowed = ["title", "price", "oldPrice", "imageUrl", "isPublished", "resourceUrl"];
   const data = Object.fromEntries(Object.entries(req.body).filter(([k]) => allowed.includes(k)));
   if (data.price != null) data.price = +data.price;
   if (data.oldPrice != null) data.oldPrice = +data.oldPrice;
