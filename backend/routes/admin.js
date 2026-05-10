@@ -236,7 +236,7 @@ router.post("/workshops", async (req, res) => {
   res.status(201).json(await prisma.workshop.create({ data: { slug, title, description, price: +price, oldPrice: oldPrice ? +oldPrice : null, imageUrl, category, wType, duration, isPublished: true } }));
 });
 router.patch("/workshops/:id", async (req, res) => {
-  const allowed = ["title", "description", "price", "oldPrice", "imageUrl", "category", "wType", "duration", "isPublished"];
+  const allowed = ["title", "description", "price", "oldPrice", "imageUrl", "category", "wType", "duration", "isPublished", "resourceUrl"];
   const data = Object.fromEntries(Object.entries(req.body).filter(([k]) => allowed.includes(k)));
   if (data.price != null) data.price = +data.price;
   if (data.oldPrice != null) data.oldPrice = +data.oldPrice;

@@ -137,6 +137,7 @@ model Workshop {
   category    String?
   wType       String?
   duration    String?
+  resourceUrl String?
   isPublished Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
