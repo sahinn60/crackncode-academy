@@ -287,4 +287,21 @@ router.delete("/blogs/:id", async (req, res) => {
   res.json({ success: true });
 });
 
+// ── Hero Section ───────────────────────────────────────────
+router.get("/hero", async (_req, res) => {
+  const hero = await prisma.heroSection.findFirst({ orderBy: { updatedAt: "desc" } });
+  res.json(hero);
+});
+router.post("/hero", async (req, res) => {
+  const { mainHeading, subText, badgeText, offerTitle, videoUrl, thumbnailUrl, countdownDate, primaryBtnText, primaryBtnUrl, secondaryBtnText, secondaryBtnUrl, isActive } = req.body;
+  if (!mainHeading) return res.status(400).json({ error: "mainHeading is required" });
+  // Upsert: only one hero section exists
+  const existing = await prisma.heroSection.findFirst();
+  const data = { mainHeading, subText, badgeText, offerTitle, videoUrl: videoUrl || null, thumbnailUrl: thumbnailUrl || null, countdownDate: countdownDate ? new Date(countdownDate) : null, primaryBtnText, primaryBtnUrl, secondaryBtnText, secondaryBtnUrl, isActive: isActive !== false };
+  const hero = existing
+    ? await prisma.heroSection.update({ where: { id: existing.id }, data })
+    : await prisma.heroSection.create({ data });
+  res.json(hero);
+});
+
 module.exports = router;

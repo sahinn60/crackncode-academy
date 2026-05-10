@@ -169,3 +169,21 @@ model Blog {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model HeroSection {
+  id              String   @id @default(cuid())
+  mainHeading     String
+  subText         String?
+  badgeText       String?
+  offerTitle      String?
+  videoUrl        String?
+  thumbnailUrl    String?
+  countdownDate   DateTime?
+  primaryBtnText  String?
+  primaryBtnUrl   String?
+  secondaryBtnText String?
+  secondaryBtnUrl String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
