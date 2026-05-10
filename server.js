@@ -12,23 +12,18 @@ const catalog = require("./data/catalog");
 const { errorHandler, notFound } = require("./backend/middleware/errorHandler");
 const { pageCache } = require("./backend/lib/cache");
 const { paginate, paginationMeta } = require("./backend/lib/paginate");
-
 // API routers
 const authRouter = require("./backend/routes/auth");
 const coursesRouter = require("./backend/routes/courses");
 const { router: ordersRouter, grantAccess } = require("./backend/routes/orders");
 const adminRouter = require("./backend/routes/admin");
 const { checkTransactionStatus, isPaymentSuccessful } = require("./backend/lib/eps");
-
 const app = express();
 const PORT = process.env.PORT || 3000;
 const prismaClient = require("./backend/lib/prisma");
-
 // Wake up Neon DB on startup (free tier auto-suspends)
 prismaClient.$connect().catch(() => console.log("[DB] Initial connection pending - Neon waking up..."));
-
 const { courses, bundles, workshops, ebooks, blogs, courseBySlug, findProduct, searchAll } = catalog;
-
 const topSelling = {
   featured: {
     title: "Content Creation & Passive Income with AI",
@@ -56,9 +51,7 @@ const topSelling = {
     },
   ],
 };
-
 const featuredCourses = courses.slice(0, 4);
-
 const testimonials = [
   { initials: "SM", name: "সাফিন মাহমুদ", date: "Apr 12, 2024", rating: 5, text: "কোর্সের কোয়ালিটি অসাধারণ। প্রজেক্ট বেসড শেখানো হয়েছে।", course: "Generative AI Design Masterclass" },
   { initials: "MO", name: "মেহেদী হাসান", date: "Mar 2, 2024", rating: 5, text: "Support team খুবই responsive। রেকমেন্ড করছি।", course: "Video Editing Masterclass" },
@@ -69,40 +62,32 @@ const testimonials = [
   { initials: "HK", name: "হাসান কবির", date: "Oct 1, 2023", rating: 5, text: "ফ্রিল্যান্সিং ক্লায়েন্ট পেতে হেল্প করেছে।", course: "Career Starter Pack" },
   { initials: "LA", name: "লামিয়া আক্তার", date: "Sep 14, 2023", rating: 5, text: "UI খুব ক্লিন, লার্নিং এক্সপিরিয়েন্স smooth।", course: "Spoken English Boost" },
 ];
-
 function cartCount(req) {
   const cart = req.session.cart || [];
   return cart.reduce((s, i) => s + (i.qty || 1), 0);
 }
-
 app.get("/cart/count", (req, res) => {
   res.json({ count: cartCount(req) });
 });
-
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.set("trust proxy", 1);
-
 // ── Security ────────────────────────────────────────────
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(compression());
 if (process.env.NODE_ENV !== "production") app.use(morgan("dev"));
-
 // Rate limiters
 const globalLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 300, standardHeaders: true, legacyHeaders: false, message: { error: "Too many requests, please try again later." } });
 const authLimiter  = rateLimit({ windowMs: 15 * 60 * 1000, max: 20,  standardHeaders: true, legacyHeaders: false, message: { error: "Too many login attempts, please try again later." } });
 const apiLimiter   = rateLimit({ windowMs: 15 * 60 * 1000, max: 100, standardHeaders: true, legacyHeaders: false, message: { error: "API rate limit exceeded." } });
-
 app.use(globalLimiter);
 app.use("/api/auth/login",    authLimiter);
 app.use("/api/auth/register", authLimiter);
 app.use("/api", apiLimiter);
-
 app.use(express.static(path.join(__dirname, "public"), { maxAge: "1d" }));
 app.use(express.urlencoded({ extended: true, limit: "10kb" }));
 app.use(express.json({ limit: "10kb" }));
 app.use(cookieParser());
-
 // ── JWT Cookie helpers ──────────────────────────────────────────
 function setAuthCookie(res, token) {
   res.cookie("cnc_auth", token, {
@@ -112,11 +97,9 @@ function setAuthCookie(res, token) {
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 }
-
 function clearAuthCookie(res) {
   res.clearCookie("cnc_auth");
 }
-
 function getAuthUser(req) {
   try {
     const token = req.cookies.cnc_auth;
@@ -124,12 +107,10 @@ function getAuthUser(req) {
     return jwt.verify(token, process.env.JWT_SECRET);
   } catch { return null; }
 }
-
 // Cart stored in cookie (JSON)
 function getCart(req) {
   try { return JSON.parse(req.cookies.cnc_cart || "[]"); } catch { return []; }
 }
-
 function setCart(res, cart) {
   res.cookie("cnc_cart", JSON.stringify(cart), {
     httpOnly: true,
@@ -138,7 +119,6 @@ function setCart(res, cart) {
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 }
-
 // ── Session (must be before API routes and all page routes) ──
 app.use(
   session({
@@ -153,19 +133,16 @@ app.use(
     },
   })
 );
-
 // ── API routes ────────────────────────────────────────────
 app.use("/api/auth", authRouter);
 app.use("/api/courses", coursesRouter);
 app.use("/api/orders", ordersRouter);
 app.use("/api/admin", adminRouter);
-
 // Protected resource link API — only serves link if user has paid
 app.get("/api/resource/:type/:slug", async (req, res) => {
   if (!req.session.user) return res.status(401).json({ error: "Login required" });
   const { type, slug } = req.params;
   const userId = req.session.user.id;
-
   try {
     if (type === "course") {
       const course = await prismaClient.course.findUnique({ where: { slug }, select: { id: true, resourceUrl: true } });
@@ -188,7 +165,6 @@ app.get("/api/resource/:type/:slug", async (req, res) => {
     res.status(500).json({ error: "Failed to fetch resource" });
   }
 });
-
 // Real-time ownership check API (for frontend JS state sync)
 app.get("/api/user/library", async (req, res) => {
   if (!req.session.user) return res.json({ courses: [], ebooks: [] });
@@ -205,14 +181,12 @@ app.get("/api/user/library", async (req, res) => {
     res.json({ courses: [], ebooks: [] });
   }
 });
-
 app.use(async (req, res, next) => {
   if (!req.session.cart) req.session.cart = [];
   res.locals.cartCount = cartCount(req);
   res.locals.activeNav = "";
   res.locals.searchQuery = typeof req.query.q === "string" ? req.query.q : "";
   res.locals.authUser = req.session.user || null;
-
   // Global: load user's purchased items for "Active" badge rendering
   res.locals.ownedCourses = new Set();
   res.locals.ownedEbooks  = new Set();
@@ -226,22 +200,18 @@ app.use(async (req, res, next) => {
       ebookAccesses.forEach(a => res.locals.ownedEbooks.add(a.ebook.slug));
     } catch (_) {}
   }
-
   // Helper function available in all EJS templates
   res.locals.isOwned = function(type, slug) {
     if (type === 'course') return res.locals.ownedCourses.has(slug);
     if (type === 'ebook')  return res.locals.ownedEbooks.has(slug);
     return false;
   };
-
   next();
 });
-
 // Logout — clear session and redirect
 app.post("/logout", (req, res) => {
   req.session.destroy(() => res.redirect("/login"));
 });
-
 function cartMoneyTotals(cart) {
   let subtotalOld = 0;
   let discountTotal = 0;
@@ -257,11 +227,9 @@ function cartMoneyTotals(cart) {
   });
   return { subtotalOld, discountTotal, total, qtyTotal, lineCount: (cart || []).length };
 }
-
 function renderPage(res, view, data) {
   res.render(view, { title: "CrackNcode Academy", ...data });
 }
-
 app.get("/", async (_req, res) => {
   res.locals.activeNav = "home";
   const [dbCourses, dbBundles, dbEbooks, topSellingCourses] = await Promise.all([
@@ -290,7 +258,6 @@ app.get("/", async (_req, res) => {
     testimonials,
   });
 });
-
 app.get("/courses", async (req, res) => {
   const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
   const { page, limit, skip } = paginate(req.query);
@@ -305,11 +272,9 @@ app.get("/courses", async (req, res) => {
   res.locals.activeNav = "courses";
   renderPage(res, "pages/courses", { pageTitle: "কোর্স", courses: list, count: pagination.total, searchFilter: q, pagination });
 });
-
 app.get("/search", async (req, res) => {
   const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
   if (!q) return renderPage(res, "pages/search", { pageTitle: "খুঁজুন", query: "", courses: [], bundles: [], workshops: [], ebooks: [], blogs: [], totalResults: 0 });
-
   // Try DB first
   const contains = (field) => ({ [field]: { contains: q, mode: "insensitive" } });
   const [dbCourses, dbBundles, dbWorkshops, dbEbooks, dbBlogs] = await Promise.all([
@@ -319,7 +284,6 @@ app.get("/search", async (req, res) => {
     prismaClient.ebook.findMany({ where: { isPublished: true, OR: [contains("title"), contains("author")] } }).catch(() => []),
     prismaClient.blog.findMany({ where: { isPublished: true, OR: [contains("title"), contains("excerpt")] } }).catch(() => []),
   ]);
-
   // Fallback to catalog if DB empty
   const cat = searchAll(q);
   const r = {
@@ -333,14 +297,12 @@ app.get("/search", async (req, res) => {
   res.locals.activeNav = "";
   renderPage(res, "pages/search", { pageTitle: "খুঁজুন", query: q, ...r, totalResults });
 });
-
 app.get("/bundles", async (_req, res) => {
   const dbBundles = await prismaClient.bundle.findMany({ where: { isPublished: true }, orderBy: { createdAt: "desc" } });
   const list = dbBundles.length ? dbBundles.map(b => ({ ...b, image: b.imageUrl, old: b.oldPrice, layout: "banner" })) : bundles;
   res.locals.activeNav = "bundles";
   renderPage(res, "pages/bundles", { pageTitle: "বান্ডেল", bundles: list, count: list.length });
 });
-
 app.get("/bundles/:id", async (req, res) => {
   let bundle = null;
   try {
@@ -351,14 +313,12 @@ app.get("/bundles/:id", async (req, res) => {
   if (!bundle) return res.status(404).send("Bundle not found");
   renderPage(res, "pages/bundle-detail", { pageTitle: bundle.title, bundle });
 });
-
 app.get("/workshops", async (_req, res) => {
   const dbWorkshops = await prismaClient.workshop.findMany({ where: { isPublished: true }, orderBy: { createdAt: "desc" } });
   const list = dbWorkshops.length ? dbWorkshops.map(w => ({ ...w, image: w.imageUrl, old: w.oldPrice })) : workshops;
   res.locals.activeNav = "workshops";
   renderPage(res, "pages/workshops", { pageTitle: "ওয়ার্কশপ", workshops: list, count: list.length });
 });
-
 app.get("/workshops/:slug", async (req, res) => {
   let workshop = null;
   try {
@@ -369,7 +329,6 @@ app.get("/workshops/:slug", async (req, res) => {
   if (!workshop) return res.status(404).send("Workshop not found");
   renderPage(res, "pages/workshop-detail", { pageTitle: workshop.title, workshop });
 });
-
 app.get("/ebooks", async (req, res) => {
   const { page, limit, skip } = paginate(req.query);
   const [dbEbooks, total] = await Promise.all([
@@ -381,7 +340,6 @@ app.get("/ebooks", async (req, res) => {
   res.locals.activeNav = "ebooks";
   renderPage(res, "pages/ebooks", { pageTitle: "ই-বুক", ebooks: list, count: pagination.total, pagination });
 });
-
 app.get("/ebooks/:slug", async (req, res) => {
   let ebook = null;
   try {
@@ -404,7 +362,6 @@ app.get("/ebooks/:slug", async (req, res) => {
   res.locals.activeNav = "ebooks";
   renderPage(res, "pages/ebook-detail", { pageTitle: ebook.title, ebook, discountPct, hasAccess });
 });
-
 // Ebook reader — protected
 app.get("/ebooks/:slug/read", async (req, res) => {
   if (!req.session.user) return res.redirect("/login");
@@ -427,7 +384,6 @@ app.get("/ebooks/:slug/read", async (req, res) => {
   if (!hasAccess) return res.redirect("/ebooks/" + req.params.slug);
   renderPage(res, "pages/ebook-read", { pageTitle: "Reading: " + ebook.title, ebook });
 });
-
 app.get("/blog", async (req, res) => {
   const { page, limit, skip } = paginate(req.query);
   const [dbBlogs, total] = await Promise.all([
@@ -439,7 +395,6 @@ app.get("/blog", async (req, res) => {
   res.locals.activeNav = "blog";
   renderPage(res, "pages/blog", { pageTitle: "ব্লগ", blogs: list, count: pagination.total, pagination });
 });
-
 app.get("/blog/:slug", async (req, res) => {
   let blog = null;
   try {
@@ -450,19 +405,15 @@ app.get("/blog/:slug", async (req, res) => {
   if (!blog) return res.status(404).send("Blog not found");
   renderPage(res, "pages/blog-detail", { pageTitle: blog.title, blog });
 });
-
 app.get("/team", (_req, res) => {
   renderPage(res, "pages/team", { pageTitle: "Meet The Team" });
 });
-
 app.get("/student-success", (_req, res) => {
   renderPage(res, "pages/student-success", { pageTitle: "Student Success" });
 });
-
 app.get("/contact", (_req, res) => {
   renderPage(res, "pages/contact", { pageTitle: "Contact Us" });
 });
-
 // POST /api/contact — save message to DB
 app.post("/api/contact", async (req, res) => {
   try {
@@ -476,13 +427,11 @@ app.post("/api/contact", async (req, res) => {
     res.status(500).json({ error: "Failed to send message" });
   }
 });
-
 app.get("/login", (req, res) => {
   if (req.session.user) return res.redirect("/");
   res.locals.activeNav = "login";
   renderPage(res, "pages/login", { pageTitle: "লগইন" });
 });
-
 // Profile — requires login
 app.get("/profile", async (req, res) => {
   if (!req.session.user) return res.redirect("/login");
@@ -511,23 +460,17 @@ app.get("/profile", async (req, res) => {
   if (!user) return res.redirect("/login");
   renderPage(res, "pages/profile", { pageTitle: "My Profile", user, enrollments, orders, ebookAccesses });
 });
-
 app.get("/my-courses", (req, res) => res.redirect("/profile"));
 app.get("/orders", (req, res) => res.redirect("/profile"));
-
 // ── Admin panel ───────────────────────────────────────────
-
-
 function requireAdminSession(req, res, next) {
   if (!req.session.user) return res.redirect("/login");
   if (req.session.user.role !== "ADMIN") return res.status(403).send("Access denied");
   next();
 }
-
 app.get("/admin", requireAdminSession, async (req, res) => {
   const now = new Date();
   const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-
   const [users, courseCount, paidOrders, revenue, recentOrders,
     allOrders, allUsers, coursesCnt, bundlesCnt, workshopsCnt, ebooksCnt, recentUsers] = await Promise.all([
     prismaClient.user.count(),
@@ -543,14 +486,12 @@ app.get("/admin", requireAdminSession, async (req, res) => {
     prismaClient.ebook.count(),
     prismaClient.user.findMany({ take: 8, orderBy: { createdAt: "desc" }, select: { id: true, name: true, email: true, role: true, createdAt: true } }),
   ]);
-
   // Build last 6 months labels
   const months = [];
   for (let i = 5; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
     months.push({ label: d.toLocaleString('en-GB', { month: 'short', year: '2-digit' }), year: d.getFullYear(), month: d.getMonth() });
   }
-
   const revenueByMonth = months.map(m =>
     allOrders.filter(o => o.status === 'PAID' && new Date(o.createdAt).getFullYear() === m.year && new Date(o.createdAt).getMonth() === m.month)
       .reduce((s, o) => s + o.totalPrice, 0)
@@ -558,7 +499,6 @@ app.get("/admin", requireAdminSession, async (req, res) => {
   const ordersByMonth = months.map(m =>
     allOrders.filter(o => new Date(o.createdAt).getFullYear() === m.year && new Date(o.createdAt).getMonth() === m.month).length
   );
-
   const orderStatusCount = {
     PAID:     allOrders.filter(o => o.status === 'PAID').length,
     PENDING:  allOrders.filter(o => o.status === 'PENDING').length,
@@ -567,7 +507,6 @@ app.get("/admin", requireAdminSession, async (req, res) => {
   };
   const adminCount = allUsers.filter(u => u.role === 'ADMIN').length;
   const userCount  = allUsers.filter(u => u.role === 'USER').length;
-
   const chartData = {
     months: months.map(m => m.label),
     revenue: revenueByMonth,
@@ -576,7 +515,6 @@ app.get("/admin", requireAdminSession, async (req, res) => {
     userRoles: { admin: adminCount, user: userCount },
     products: { courses: coursesCnt, bundles: bundlesCnt, workshops: workshopsCnt, ebooks: ebooksCnt },
   };
-
   res.render("admin/dashboard", {
     pageTitle: "Dashboard",
     adminNav: "dashboard",
@@ -587,17 +525,14 @@ app.get("/admin", requireAdminSession, async (req, res) => {
     chartData: JSON.stringify(chartData),
   });
 });
-
 app.get("/admin/courses", requireAdminSession, async (req, res) => {
   const courses = await prismaClient.course.findMany({ orderBy: { createdAt: "desc" } });
   res.render("admin/courses", { pageTitle: "Courses", adminNav: "courses", authUser: req.session.user, courses });
 });
-
 app.get("/admin/topselling", requireAdminSession, async (req, res) => {
   const courses = await prismaClient.course.findMany({ orderBy: { createdAt: "desc" } });
   res.render("admin/topselling", { pageTitle: "Top Selling Courses", adminNav: "topselling", authUser: req.session.user, courses });
 });
-
 app.get("/admin/users", requireAdminSession, async (req, res) => {
   const { page, limit, skip } = paginate(req.query);
   const [users, total] = await Promise.all([
@@ -610,7 +545,6 @@ app.get("/admin/users", requireAdminSession, async (req, res) => {
   const pagination = paginationMeta(total, page, limit);
   res.render("admin/users", { pageTitle: "Users", adminNav: "users", authUser: req.session.user, users, pagination });
 });
-
 app.get("/admin/orders", requireAdminSession, async (req, res) => {
   const { page, limit, skip } = paginate(req.query);
   const [orders, total] = await Promise.all([
@@ -623,27 +557,22 @@ app.get("/admin/orders", requireAdminSession, async (req, res) => {
   const pagination = paginationMeta(total, page, limit);
   res.render("admin/orders", { pageTitle: "Orders", adminNav: "orders", authUser: req.session.user, orders, pagination });
 });
-
 app.get("/admin/bundles", requireAdminSession, async (req, res) => {
   const items = await prismaClient.bundle.findMany({ orderBy: { createdAt: "desc" } });
   res.render("admin/bundles", { pageTitle: "Bundles", adminNav: "bundles", authUser: req.session.user, items });
 });
-
 app.get("/admin/workshops", requireAdminSession, async (req, res) => {
   const items = await prismaClient.workshop.findMany({ orderBy: { createdAt: "desc" } });
   res.render("admin/workshops", { pageTitle: "Workshops", adminNav: "workshops", authUser: req.session.user, items });
 });
-
 app.get("/admin/ebooks", requireAdminSession, async (req, res) => {
   const items = await prismaClient.ebook.findMany({ orderBy: { createdAt: "desc" } });
   res.render("admin/ebooks", { pageTitle: "E-Books", adminNav: "ebooks", authUser: req.session.user, items });
 });
-
 app.get("/admin/blogs", requireAdminSession, async (req, res) => {
   const items = await prismaClient.blog.findMany({ orderBy: { createdAt: "desc" } });
   res.render("admin/blogs", { pageTitle: "Blogs", adminNav: "blogs", authUser: req.session.user, items });
 });
-
 app.get("/admin/messages", requireAdminSession, async (req, res) => {
   const messages = await prismaClient.contactMessage.findMany({ orderBy: { createdAt: "desc" } });
   res.render("admin/messages", {
@@ -653,23 +582,28 @@ app.get("/admin/messages", requireAdminSession, async (req, res) => {
     messages,
   });
 });
-
 app.patch("/api/admin/messages/:id/read", async (req, res) => {
   if (!req.session.user || req.session.user.role !== "ADMIN") return res.status(403).json({ error: "Forbidden" });
   await prismaClient.contactMessage.update({ where: { id: req.params.id }, data: { isRead: true } });
   res.json({ success: true });
 });
-
+app.get("/courses/:slug/learn", async (req, res) => {
+  if (!req.session.user) return res.redirect("/login");
+  const dbCourse = await prismaClient.course.findUnique({ where: { slug: req.params.slug } });
+  const course = dbCourse ? { ...dbCourse, image: dbCourse.imageUrl } : courseBySlug(req.params.slug);
+  if (!course) return res.status(404).send("Course not found");
+  var isEnrolled = res.locals.ownedCourses.has(req.params.slug);
+  if (!isEnrolled) return res.redirect("/courses/" + req.params.slug);
+  renderPage(res, "pages/course-learn", { pageTitle: "Learning: " + course.title, course });
+});
 app.get("/courses/:slug", async (req, res) => {
   const dbCourse = await prismaClient.course.findUnique({ where: { slug: req.params.slug } });
   const course = dbCourse
     ? { ...dbCourse, image: dbCourse.imageUrl, discountPct: dbCourse.oldPrice ? Math.round((1 - dbCourse.price / dbCourse.oldPrice) * 100) : 0, modules: [], reviews: [], reviewsSummary: { avg: 0, count: 0, bars: [] } }
     : courseBySlug(req.params.slug);
   if (!course) return res.status(404).send("Course not found");
-
   // Check enrollment using global Set (most reliable — works for both DB and catalog courses)
   var isEnrolled = res.locals.ownedCourses.has(req.params.slug);
-
   // Double-check via DB if user is logged in and Set missed it
   if (!isEnrolled && req.session.user) {
     try {
@@ -682,22 +616,9 @@ app.get("/courses/:slug", async (req, res) => {
       }
     } catch (_) {}
   }
-
   res.locals.activeNav = "courses";
   renderPage(res, "pages/course-detail", { pageTitle: course.titleBn || course.title, course, isEnrolled });
 });
-
-app.get("/courses/:slug/learn", async (req, res) => {
-  if (!req.session.user) return res.redirect("/login");
-  const dbCourse = await prismaClient.course.findUnique({ where: { slug: req.params.slug } });
-  const course = dbCourse ? { ...dbCourse, image: dbCourse.imageUrl } : courseBySlug(req.params.slug);
-  if (!course) return res.status(404).send("Course not found");
-  // Verify enrollment
-  var isEnrolled = res.locals.ownedCourses.has(req.params.slug);
-  if (!isEnrolled) return res.redirect("/courses/" + req.params.slug);
-  renderPage(res, "pages/course-learn", { pageTitle: "Learning: " + course.title, course });
-});
-
 app.get("/cart", (req, res) => {
   res.locals.activeNav = "cart";
   const cart = req.session.cart || [];
@@ -716,7 +637,6 @@ app.get("/cart", (req, res) => {
     showCheckoutNote,
   });
 });
-
 app.post("/cart/remove", (req, res) => {
   const idx = parseInt(req.body.index, 10);
   const cart = req.session.cart || [];
@@ -724,25 +644,20 @@ app.post("/cart/remove", (req, res) => {
   req.session.cart = cart;
   res.redirect("/cart");
 });
-
 app.post("/cart/clear", (req, res) => {
   req.session.cart = [];
   res.redirect("/cart");
 });
-
 // ── Static info pages ──────────────────────────────────────
 app.get("/about", (_req, res) => renderPage(res, "pages/static", { pageTitle: "About Us", heading: "About Us" }));
 app.get("/become-instructor", (_req, res) => renderPage(res, "pages/static", { pageTitle: "Become an Instructor", heading: "Become an Instructor" }));
 app.get("/terms", (_req, res) => renderPage(res, "pages/static", { pageTitle: "Terms & Conditions", heading: "Terms & Conditions" }));
 app.get("/privacy", (_req, res) => renderPage(res, "pages/static", { pageTitle: "Privacy Policy", heading: "Privacy Policy" }));
 app.get("/refund", (_req, res) => renderPage(res, "pages/static", { pageTitle: "Refund Policy", heading: "Refund Policy" }));
-
 app.post("/cart/add", async (req, res) => {
   const { type, slug, redirect, ajax } = req.body;
-
   // Try catalog first
   let product = findProduct(type || "course", slug);
-
   // If not in catalog, try DB
   if (!product) {
     try {
@@ -761,7 +676,6 @@ app.post("/cart/add", async (req, res) => {
       }
     } catch (_) {}
   }
-
   if (!product) {
     if (ajax) return res.status(404).json({ error: "Product not found", count: cartCount(req) });
     return res.redirect(redirect || "/courses");
@@ -776,18 +690,15 @@ app.post("/cart/add", async (req, res) => {
   const dest = redirect && String(redirect).startsWith("/") ? redirect : req.get("Referer") || "/cart";
   res.redirect(dest);
 });
-
 // Payment result pages
 app.get("/payment/success", (req, res) => {
   const orderId = req.query.orderId || "";
   const courseName = req.query.course || "Course";
   renderPage(res, "pages/payment-success", { pageTitle: "Payment Successful", orderId, courseName });
 });
-
 app.get("/payment/failed", (req, res) => {
   renderPage(res, "pages/payment-failed", { pageTitle: "Payment Failed" });
 });
-
 // ── EPS Payment Callbacks ──────────────────────────────────────────
 app.get("/payment/eps/success", async (req, res) => {
   const { orderId, merchantTxnId, EPSTransactionId, mock } = req.query;
@@ -800,7 +711,6 @@ app.get("/payment/eps/success", async (req, res) => {
     if (order.status === "PAID") {
       return renderPage(res, "pages/payment-success", { pageTitle: "Payment Successful", orderId, courseName: "Your purchase" });
     }
-
     // Mock mode or real EPS verification
     let verified = !!mock;
     if (!verified) {
@@ -811,7 +721,6 @@ app.get("/payment/eps/success", async (req, res) => {
         verified = true;
       }
     }
-
     if (verified) {
       await grantAccess(order);
       const firstItem = order.items[0];
@@ -824,25 +733,20 @@ app.get("/payment/eps/success", async (req, res) => {
     res.redirect("/payment/failed");
   }
 });
-
 app.get("/payment/eps/fail", (req, res) => {
   renderPage(res, "pages/payment-failed", { pageTitle: "Payment Failed" });
 });
-
 app.get("/payment/eps/cancel", (req, res) => {
   renderPage(res, "pages/payment-failed", { pageTitle: "Payment Cancelled" });
 });
-
 app.get("/checkout/:slug", (req, res) => {
   const course = courseBySlug(req.params.slug);
   if (!course) return res.status(404).send("Course not found");
   return res.redirect(`/checkout?type=course&slug=${encodeURIComponent(course.slug)}`);
 });
-
 app.get("/checkout", async (req, res) => {
   const type = typeof req.query.type === "string" ? req.query.type : "course";
   const slug = typeof req.query.slug === "string" ? req.query.slug : "";
-
   let product = null;
   try {
     if (type === "bundle") {
@@ -859,25 +763,20 @@ app.get("/checkout", async (req, res) => {
       if (dbC) product = { type: "course", slug: dbC.slug, title: dbC.title, price: dbC.price, oldPrice: dbC.oldPrice, image: dbC.imageUrl };
     }
   } catch (_) {}
-
   if (!product) product = findProduct(type, slug);
   if (!product) return res.status(404).send("Product not found");
-
   const discount = Math.max(0, (product.oldPrice != null ? product.oldPrice : product.price) - product.price);
   const discountPct = product.oldPrice && product.oldPrice > product.price ? Math.round((1 - product.price / product.oldPrice) * 100) : 0;
   res.locals.activeNav = type === "ebook" ? "ebooks" : type === "course" ? "courses" : "";
   renderPage(res, "pages/checkout", { pageTitle: "চেকআউট", product, discount, discountPct });
 });
-
 // ── 404 + Error Handler (must be last) ────────────────────────
 app.use(notFound);
 app.use(errorHandler);
-
 // Export for Vercel serverless, listen for local dev
 if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`CrackNcode Academy → http://localhost:${PORT}`);
   });
 }
-
 module.exports = app;
