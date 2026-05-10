@@ -62,8 +62,12 @@
               <h3 class="text-xl font-bold text-white md:text-2xl"><%= topSelling.featured.title %></h3>
               <p class="mt-2 text-sm text-slate-400"><%= topSelling.featured.desc %></p>
               <div class="mt-4 flex items-baseline gap-3">
-                <span class="text-2xl font-bold text-fire">৳<%= topSelling.featured.price.toLocaleString("bn-BD") %></span>
-                <span class="text-sm text-slate-500 line-through">৳<%= topSelling.featured.oldPrice.toLocaleString("bn-BD") %></span>
+                <% if (isOwned('course', topSelling.featured.slug)) { %>
+                  <span style="border-radius:5px; padding:4px 12px; font-weight:bold; background:#28a745; color:#fff; font-size:14px;">✓ Enrolled</span>
+                <% } else { %>
+                  <span class="text-2xl font-bold text-fire">৳<%= topSelling.featured.price.toLocaleString("bn-BD") %></span>
+                  <span class="text-sm text-slate-500 line-through">৳<%= topSelling.featured.oldPrice.toLocaleString("bn-BD") %></span>
+                <% } %>
               </div>
             </div>
           </a>
@@ -74,9 +78,13 @@
                 <div class="flex min-w-0 flex-1 flex-col justify-center p-4">
                   <h3 class="line-clamp-2 text-sm font-semibold text-white md:text-base"><%= c.title %></h3>
                   <div class="mt-2 flex flex-wrap items-baseline gap-2">
-                    <span class="text-lg font-bold text-fire">৳<%= c.price.toLocaleString("bn-BD") %></span>
-                    <% if (c.oldPrice) { %>
-                      <span class="text-xs text-slate-500 line-through">৳<%= c.oldPrice.toLocaleString("bn-BD") %></span>
+                    <% if (isOwned('course', c.slug)) { %>
+                      <span style="border-radius:5px; padding:3px 10px; font-weight:bold; background:#28a745; color:#fff; font-size:12px;">✓ Enrolled</span>
+                    <% } else { %>
+                      <span class="text-lg font-bold text-fire">৳<%= c.price.toLocaleString("bn-BD") %></span>
+                      <% if (c.oldPrice) { %>
+                        <span class="text-xs text-slate-500 line-through">৳<%= c.oldPrice.toLocaleString("bn-BD") %></span>
+                      <% } %>
                     <% } %>
                   </div>
                 </div>
@@ -107,10 +115,19 @@
                 <a href="/courses/<%= c.slug %>" class="text-lg font-bold text-white hover:text-sky"><%= c.titleBn %></a>
                 <p class="mt-2 line-clamp-2 flex-1 text-sm text-slate-400"><%= c.desc %></p>
                 <div class="mt-4 flex items-baseline gap-2">
-                  <span class="text-xl font-bold text-fire">৳<%= c.price.toLocaleString("bn-BD") %></span>
-                  <span class="text-sm text-slate-500 line-through">৳<%= c.oldPrice.toLocaleString("bn-BD") %></span>
+                  <% if (isOwned('course', c.slug)) { %>
+                    <span style="border-radius:5px; padding:4px 12px; font-weight:bold; background:#28a745; color:#fff; font-size:12px;">✓ Enrolled</span>
+                  <% } else { %>
+                    <span class="text-xl font-bold text-fire">৳<%= c.price.toLocaleString("bn-BD") %></span>
+                    <span class="text-sm text-slate-500 line-through">৳<%= c.oldPrice.toLocaleString("bn-BD") %></span>
+                  <% } %>
                 </div>
                 <div class="mt-4 grid grid-cols-2 gap-2">
+                  <% if (isOwned('course', c.slug)) { %>
+                    <a href="/courses/<%= c.slug %>" class="col-span-2 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 py-2.5 text-sm font-bold text-white">
+                      ✓ Enrolled — View
+                    </a>
+                  <% } else { %>
                   <form action="/cart/add" method="post" class="contents" data-ajax-cart>
                     <input type="hidden" name="type" value="course" />
                     <input type="hidden" name="slug" value="<%= c.slug %>" />
@@ -124,6 +141,7 @@
                     বিস্তারিত
                     <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
                   </a>
+                  <% } %>
                 </div>
                 <div class="mt-3 flex items-center justify-end gap-1 text-xs text-slate-500">
                   <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -156,9 +174,16 @@
               <p class="text-xs text-sky/90">By <%= b.author %></p>
               <div class="mt-3 flex items-center justify-between gap-2">
                 <div>
-                  <span class="text-lg font-bold text-fire">৳<%= b.price %></span>
-                  <span class="ml-1 text-xs text-slate-500 line-through">৳<%= b.old %></span>
+                  <% if (isOwned('ebook', b.slug)) { %>
+                    <span style="border-radius:5px; padding:3px 8px; font-weight:bold; background:#28a745; color:#fff; font-size:11px;">✓ Active</span>
+                  <% } else { %>
+                    <span class="text-lg font-bold text-fire">৳<%= b.price %></span>
+                    <span class="ml-1 text-xs text-slate-500 line-through">৳<%= b.old %></span>
+                  <% } %>
                 </div>
+                <% if (isOwned('ebook', b.slug)) { %>
+                  <a href="/ebooks/<%= b.slug %>/read" class="flex shrink-0 items-center gap-1 rounded-lg bg-emerald-500 px-2 py-1.5 text-xs font-bold text-white">Read</a>
+                <% } else { %>
                 <form action="/cart/add" method="post" class="inline" data-ajax-cart>
                   <input type="hidden" name="type" value="ebook" />
                   <input type="hidden" name="slug" value="<%= b.slug %>" />
@@ -168,6 +193,7 @@
                   কার্ট
                 </button>
                 </form>
+                <% } %>
               </div>
             </article>
           <% }); %>
