@@ -156,12 +156,51 @@ app.use("/api/courses", coursesRouter);
 app.use("/api/orders", ordersRouter);
 app.use("/api/admin", adminRouter);
 
-app.use((req, res, next) => {
+// Real-time ownership check API (for frontend JS state sync)
+app.get("/api/user/library", async (req, res) => {
+  if (!req.session.user) return res.json({ courses: [], ebooks: [] });
+  try {
+    const [enrollments, ebookAccesses] = await Promise.all([
+      prismaClient.enrollment.findMany({ where: { userId: req.session.user.id }, select: { course: { select: { slug: true } } } }),
+      prismaClient.ebookAccess.findMany({ where: { userId: req.session.user.id }, select: { ebook: { select: { slug: true } } } }),
+    ]);
+    res.json({
+      courses: enrollments.map(e => e.course.slug),
+      ebooks: ebookAccesses.map(a => a.ebook.slug),
+    });
+  } catch (_) {
+    res.json({ courses: [], ebooks: [] });
+  }
+});
+
+app.use(async (req, res, next) => {
   if (!req.session.cart) req.session.cart = [];
   res.locals.cartCount = cartCount(req);
   res.locals.activeNav = "";
   res.locals.searchQuery = typeof req.query.q === "string" ? req.query.q : "";
   res.locals.authUser = req.session.user || null;
+
+  // Global: load user's purchased items for "Active" badge rendering
+  res.locals.ownedCourses = new Set();
+  res.locals.ownedEbooks  = new Set();
+  if (req.session.user) {
+    try {
+      const [enrollments, ebookAccesses] = await Promise.all([
+        prismaClient.enrollment.findMany({ where: { userId: req.session.user.id }, select: { course: { select: { slug: true } } } }),
+        prismaClient.ebookAccess.findMany({ where: { userId: req.session.user.id }, select: { ebook: { select: { slug: true } } } }),
+      ]);
+      enrollments.forEach(e => res.locals.ownedCourses.add(e.course.slug));
+      ebookAccesses.forEach(a => res.locals.ownedEbooks.add(a.ebook.slug));
+    } catch (_) {}
+  }
+
+  // Helper function available in all EJS templates
+  res.locals.isOwned = function(type, slug) {
+    if (type === 'course') return res.locals.ownedCourses.has(slug);
+    if (type === 'ebook')  return res.locals.ownedEbooks.has(slug);
+    return false;
+  };
+
   next();
 });
 

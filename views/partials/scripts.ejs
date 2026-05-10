@@ -45,6 +45,35 @@
   </svg>
 </a>
 
+<!-- Real-time ownership sync -->
+<script>
+(function() {
+  // After page load, check if any items need Active badge update
+  async function syncLibrary() {
+    try {
+      var res = await fetch('/api/user/library', { credentials: 'include' });
+      if (!res.ok) return;
+      var lib = await res.json();
+      // Update DOM elements with data-product-type and data-product-slug
+      document.querySelectorAll('[data-product-slug]').forEach(function(el) {
+        var type = el.getAttribute('data-product-type');
+        var slug = el.getAttribute('data-product-slug');
+        var owned = (type === 'course' && lib.courses.includes(slug)) || (type === 'ebook' && lib.ebooks.includes(slug));
+        var priceEl = el.querySelector('.price-section');
+        var buyEl   = el.querySelector('.buy-section');
+        var activeEl = el.querySelector('.active-section');
+        if (owned) {
+          if (priceEl) priceEl.style.display = 'none';
+          if (buyEl)   buyEl.style.display = 'none';
+          if (activeEl) activeEl.style.display = '';
+        }
+      });
+    } catch(_) {}
+  }
+  if (localStorage.getItem('cnc_token')) syncLibrary();
+})();
+</script>
+
 <script>
   (function () {
     function updateCartBadge(count) {

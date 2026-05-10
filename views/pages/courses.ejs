@@ -38,23 +38,28 @@
                 <a href="/courses/<%= c.slug %>" class="text-lg font-bold text-white hover:text-sky"><%= c.title %></a>
                 <p class="mt-2 line-clamp-2 text-sm text-slate-400"><%= c.desc %></p>
                 <div class="mt-4 flex items-baseline gap-2">
-                  <span class="text-xl font-bold text-fire">৳<%= c.price.toLocaleString("bn-BD") %></span>
-                  <span class="text-sm text-slate-500 line-through">৳<%= c.oldPrice.toLocaleString("bn-BD") %></span>
+                  <%- include('../partials/price-badge', { type: 'course', slug: c.slug, price: c.price, oldPrice: c.oldPrice }) %>
                 </div>
                 <div class="mt-4 grid flex-1 grid-cols-2 gap-2 self-stretch">
-                  <form action="/cart/add" method="post" data-ajax-cart>
-                    <input type="hidden" name="type" value="course" />
-                    <input type="hidden" name="slug" value="<%= c.slug %>" />
-                    <input type="hidden" name="redirect" value="/courses" />
-                    <button type="submit" class="flex w-full items-center justify-center gap-1 rounded-xl bg-sky py-2.5 text-sm font-semibold text-night hover:bg-sky/90">
-                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4"/></svg>
-                      কার্ট
-                    </button>
-                  </form>
-                  <a href="/courses/<%= c.slug %>" class="flex items-center justify-center gap-1 rounded-xl border border-sky/50 bg-night/40 py-2.5 text-sm font-medium text-sky hover:bg-sky/10">
-                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    ডিটেইলস
-                  </a>
+                  <% if (isOwned('course', c.slug)) { %>
+                    <a href="/courses/<%= c.slug %>" class="col-span-2 flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 py-2.5 text-sm font-bold text-white">
+                      ✓ Enrolled — View Course
+                    </a>
+                  <% } else { %>
+                    <form action="/cart/add" method="post" data-ajax-cart>
+                      <input type="hidden" name="type" value="course" />
+                      <input type="hidden" name="slug" value="<%= c.slug %>" />
+                      <input type="hidden" name="redirect" value="/courses" />
+                      <button type="submit" class="flex w-full items-center justify-center gap-1 rounded-xl bg-sky py-2.5 text-sm font-semibold text-night hover:bg-sky/90">
+                        <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4"/></svg>
+                        কার্ট
+                      </button>
+                    </form>
+                    <a href="/courses/<%= c.slug %>" class="flex items-center justify-center gap-1 rounded-xl border border-sky/50 bg-night/40 py-2.5 text-sm font-medium text-sky hover:bg-sky/10">
+                      <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                      ডিটেইলস
+                    </a>
+                  <% } %>
                 </div>
               </div>
             </article>

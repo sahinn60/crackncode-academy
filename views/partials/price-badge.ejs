@@ -1,0 +1,17 @@
+<%
+/**
+ * Usage: <%- include('../partials/price-badge', { type: 'course'|'ebook', slug: item.slug, price: item.price, oldPrice: item.oldPrice }) %>
+ * Requires: res.locals.isOwned (set by global middleware)
+ */
+var _owned = typeof isOwned === 'function' && isOwned(type, slug);
+var _discPct = oldPrice && oldPrice > price ? Math.round((1 - price / oldPrice) * 100) : 0;
+%>
+<% if (_owned) { %>
+  <span style="border-radius:5px; padding:4px 12px; font-weight:bold; background:#28a745; color:#fff; font-size:12px; display:inline-block;">✓ Active</span>
+<% } else { %>
+  <span class="text-xl font-bold text-fire">৳<%= price.toLocaleString ? price.toLocaleString("bn-BD") : price %></span>
+  <% if (oldPrice && oldPrice > price) { %>
+    <span class="text-sm text-slate-500 line-through">৳<%= oldPrice.toLocaleString ? oldPrice.toLocaleString("bn-BD") : oldPrice %></span>
+    <span class="rounded-full bg-emerald-500/20 px-2 py-0.5 text-xs font-semibold text-emerald-300"><%= _discPct %>% ছাড়</span>
+  <% } %>
+<% } %>
