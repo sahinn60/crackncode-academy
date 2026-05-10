@@ -573,6 +573,12 @@ app.get("/admin/blogs", requireAdminSession, async (req, res) => {
   const items = await prismaClient.blog.findMany({ orderBy: { createdAt: "desc" } });
   res.render("admin/blogs", { pageTitle: "Blogs", adminNav: "blogs", authUser: req.session.user, items });
 });
+
+app.get("/admin/hero", requireAdminSession, async (req, res) => {
+  const hero = await prismaClient.heroSection.findFirst({ orderBy: { updatedAt: "desc" } });
+  res.render("admin/hero", { pageTitle: "Hero Section", adminNav: "hero", authUser: req.session.user, hero: hero || {} });
+});
+
 app.get("/admin/messages", requireAdminSession, async (req, res) => {
   const messages = await prismaClient.contactMessage.findMany({ orderBy: { createdAt: "desc" } });
   res.render("admin/messages", {
