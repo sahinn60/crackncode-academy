@@ -19,40 +19,43 @@
       <span style="border-radius:5px; padding:4px 12px; font-weight:bold; background:#28a745; color:#fff; font-size:13px;">✓ Enrolled</span>
     </div>
 
-    <% if (course.resourceUrl) { %>
-      <!-- Resource link available -->
+    <%
+      var links = [];
+      if (course.resourceUrl) {
+        try { links = JSON.parse(course.resourceUrl); } catch(_) {}
+        if (!Array.isArray(links)) {
+          if (typeof course.resourceUrl === 'string' && course.resourceUrl.startsWith('http')) {
+            links = [{label: 'Course Content', url: course.resourceUrl}];
+          } else { links = []; }
+        }
+      }
+    %>
+
+    <% if (links.length > 0) { %>
       <div class="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-6">
         <h2 class="flex items-center gap-2 text-lg font-semibold text-white">
           <svg class="h-5 w-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
-          Course Resource
+          Course Resources (<%= links.length %> links)
         </h2>
-        <p class="mt-2 text-sm text-slate-400">নিচের লিঙ্কে ক্লিক করে কোর্স কন্টেন্ট access করুন:</p>
+        <p class="mt-2 text-sm text-slate-400">নিচের লিঙ্কগুলোতে ক্লিক করে কোর্স কন্টেন্ট access করুন:</p>
 
-        <a href="<%= course.resourceUrl %>" target="_blank" rel="noopener noreferrer"
-          class="mt-4 flex items-center gap-3 rounded-xl border border-emerald-500/40 bg-[#0a1428] p-4 transition hover:border-emerald-500/70 hover:bg-emerald-500/10">
-          <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/20">
-            <svg class="h-6 w-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-          </div>
-          <div class="min-w-0 flex-1">
-            <p class="font-semibold text-white">Open Course Content</p>
-            <p class="truncate text-xs text-slate-500"><%= course.resourceUrl %></p>
-          </div>
-          <svg class="h-5 w-5 shrink-0 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
-        </a>
-
-        <!-- Embed if Google Drive -->
-        <% var isGDrive = course.resourceUrl.includes('drive.google.com'); %>
-        <% if (isGDrive) { %>
-          <div class="mt-6">
-            <h3 class="mb-3 text-sm font-semibold text-white">Preview:</h3>
-            <div class="overflow-hidden rounded-xl border border-white/10">
-              <iframe src="<%= course.resourceUrl.replace('/view','/preview') %>" class="w-full" style="height:70vh; min-height:500px;" frameborder="0" allowfullscreen></iframe>
-            </div>
-          </div>
-        <% } %>
+        <div class="mt-4 space-y-3">
+          <% links.forEach(function(link, idx) { %>
+            <a href="<%= link.url %>" target="_blank" rel="noopener noreferrer"
+              class="flex items-center gap-3 rounded-xl border border-emerald-500/40 bg-[#0a1428] p-4 transition hover:border-emerald-500/70 hover:bg-emerald-500/10">
+              <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-500/20 text-sm font-bold text-emerald-400">
+                <%= idx + 1 %>
+              </div>
+              <div class="min-w-0 flex-1">
+                <p class="font-semibold text-white"><%= link.label || ('Link ' + (idx+1)) %></p>
+                <p class="truncate text-xs text-slate-500"><%= link.url %></p>
+              </div>
+              <svg class="h-5 w-5 shrink-0 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+            </a>
+          <% }); %>
+        </div>
       </div>
     <% } else { %>
-      <!-- No resource yet -->
       <div class="rounded-2xl border border-white/10 bg-[#0a1428] p-10 text-center">
         <svg class="mx-auto h-16 w-16 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
         <h2 class="mt-4 text-lg font-bold text-white">কন্টেন্ট শীঘ্রই আসছে</h2>

@@ -36,7 +36,15 @@
                     <div>
                       <p class="font-medium text-white"><%= c.title %></p>
                       <p class="text-xs text-slate-500"><%= c.slug %></p>
-                      <% if (c.resourceUrl) { %><p class="text-xs text-emerald-400 mt-0.5">✅ Links added</p><% } %>
+                      <% if (c.resourceUrl) { %>
+                        <%
+                          var cLinks = [];
+                          try { cLinks = JSON.parse(c.resourceUrl); } catch(_) {}
+                          if (!Array.isArray(cLinks) && typeof c.resourceUrl === 'string' && c.resourceUrl.startsWith('http')) cLinks = [{label:'Link',url:c.resourceUrl}];
+                          if (!Array.isArray(cLinks)) cLinks = [];
+                        %>
+                        <p class="text-xs text-emerald-400 mt-0.5">✅ <%= cLinks.length %> link<%= cLinks.length > 1 ? 's' : '' %> added</p>
+                      <% } %>
                     </div>
                   </div>
                 </td>
