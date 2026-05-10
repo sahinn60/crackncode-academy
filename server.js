@@ -786,3 +786,7 @@ if (require.main === module) {
   });
 }
 module.exports = app;
+
+process.on('unhandledRejection', (err) => {
+  console.error('[DB] Connection error (Neon waking up?):', err.message || err);
+});
