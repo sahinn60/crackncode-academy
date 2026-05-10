@@ -22,6 +22,7 @@ const { checkTransactionStatus, isPaymentSuccessful } = require("./backend/lib/e
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const prismaClient = require("./backend/lib/prisma");
 
 const { courses, bundles, workshops, ebooks, blogs, courseBySlug, findProduct, searchAll } = catalog;
 
@@ -483,7 +484,7 @@ app.get("/my-courses", (req, res) => res.redirect("/profile"));
 app.get("/orders", (req, res) => res.redirect("/profile"));
 
 // ── Admin panel ───────────────────────────────────────────
-const prismaClient = require("./backend/lib/prisma");
+
 
 function requireAdminSession(req, res, next) {
   if (!req.session.user) return res.redirect("/login");
